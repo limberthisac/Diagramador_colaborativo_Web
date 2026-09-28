@@ -14,6 +14,8 @@ import { ActivatedRoute } from '@angular/router';
 import { TopBar } from '../top-bar/top-bar';
 import { JoinName } from '../join-name/join-name';
 import { IdentityService } from '../../services/session/identity.service';
+import { HttpErrorResponse } from '@angular/common/http';
+import { finalize, timeout } from 'rxjs';
 
 @Component({
   selector: 'app-diagram',
@@ -76,9 +78,10 @@ export class Diagram implements AfterViewInit {
             this.generateFromPrompt(prompt);
           });
           
-          this.umlValidation.connect((result) => {
-            this.sidePanel.updateValidationResult(result);
-          });
+          this.umlValidation.connect(
+            (result) => this.sidePanel.updateValidationResult(result),
+            (message) => this.sidePanel.updateValidationError(message)
+          );
           
           console.log('Diagrama inicializado correctamente');
         } catch (error) {
@@ -110,18 +113,69 @@ export class Diagram implements AfterViewInit {
   }
 
   generateFromPrompt(prompt: string) {
+    this.chatbot.errorMessage.set(null);
     this.chatbot.isLoading.set(true);
-    this.chatbot.generateDiagram(prompt).subscribe({
+    this.chatbot.generateDiagram(prompt).pipe(
+      timeout(90000),
+      finalize(() => this.chatbot.isLoading.set(false))
+    ).subscribe({
       next: (json) => {
         console.log('Respuesta del chatbot:', json);
-        this.diagramService.loadFromJson(json,true);
-        this.chatbot.isLoading.set(false);
+
+        if (json?.error) {
+          this.chatbot.errorMessage.set(
+            typeof json.error === 'string'
+              ? json.error
+              : 'El servicio de IA no pudo generar el diagrama.'
+          );
+          return;
+        }
+
+        if (!Array.isArray(json?.classes) || !Array.isArray(json?.relationships)) {
+          this.chatbot.errorMessage.set('La IA devolvió una respuesta que no se pudo interpretar.');
+          return;
+        }
+
+        try {
+          this.diagramService.loadFromJson(json, true);
+          this.sidePanel.clearPrompt();
+        } catch (error) {
+          console.error('Error al cargar la respuesta de la IA', error);
+          this.chatbot.errorMessage.set('La respuesta de la IA no pudo cargarse como diagrama.');
+        }
       },
-      error: (err) => {
+      error: (err: HttpErrorResponse | Error) => {
         console.error('Error al generar diagrama desde chatbot', err);
-        this.chatbot.isLoading.set(false);
+        this.chatbot.errorMessage.set(this.getChatbotErrorMessage(err));
       }
     });
+  }
+
+  private getChatbotErrorMessage(error: HttpErrorResponse | Error): string {
+    if (error.name === 'TimeoutError') {
+      return 'La IA tardó demasiado en responder. Inténtalo nuevamente.';
+    }
+
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 0) {
+        return 'No se pudo conectar con el servidor de IA. Verifica tu conexión e inténtalo nuevamente.';
+      }
+
+      const backendMessage = error.error?.error;
+      if (typeof backendMessage === 'string' && backendMessage.trim()) {
+        return backendMessage;
+      }
+
+      if (error.status === 429) {
+        return 'El servicio de IA alcanzó su límite de solicitudes. Inténtalo más tarde.';
+      }
+
+      if (error.status >= 500) {
+        return 'El servicio de IA no está disponible temporalmente.';
+      }
+    }
+
+    return 'No se pudo generar el diagrama. Inténtalo nuevamente.';
   }
 
   @HostListener('document:keydown', ['$event'])
