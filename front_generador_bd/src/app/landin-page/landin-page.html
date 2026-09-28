@@ -1,0 +1,128 @@
+<div class="landing min-h-screen relative overflow-hidden flex flex-col items-center justify-center px-5 font-sans">
+
+  <!-- Orbes de ambiente. Laten desfasados para que la respiración no sea uniforme. -->
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+
+  <!-- Cambio de tema -->
+  <button type="button" class="theme-toggle" (click)="theme.toggle()"
+    [attr.aria-label]="theme.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
+    @if (theme.isDark()) {
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+        stroke-linecap="round">
+        <circle cx="12" cy="12" r="4.2" />
+        <path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6" />
+      </svg>
+    } @else {
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+      </svg>
+    }
+  </button>
+
+  <!-- Encabezado -->
+  <div class="relative z-10 text-center animate-fade-in-down">
+    <h1 class="landing-title font-extrabold tracking-tight">
+      Lienzo Colaborativo
+    </h1>
+    <p class="landing-sub text-fg-2 font-light max-w-lg mx-auto">
+      Diseña, sincroniza y crea diagramas UML en tiempo real con tu equipo.
+    </p>
+  </div>
+
+  <!-- Identidad del participante -->
+  <div class="relative z-10 name-block">
+    <label class="name-label" for="display-name">
+      ¿Cómo te llamamos? <span class="req" aria-hidden="true">*</span>
+    </label>
+
+    <div class="name-field" [class.is-required]="nameMissing()">
+      <span class="name-avatar" [style.background]="avatarColor">{{ initials }}</span>
+      <input id="display-name" type="text" maxlength="24" autocomplete="name" placeholder="Tu nombre"
+        [(ngModel)]="displayName" (ngModelChange)="onNameInput()" />
+    </div>
+
+    <p class="name-hint">Así te verán los demás en la sala.</p>
+  </div>
+
+  <!-- Tarjetas -->
+  <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+
+    <!-- Crear -->
+    <div class="glass-card group">
+      <div class="card-head text-center">
+        <div class="card-badge">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+            stroke-linecap="round">
+            <path d="M12 4v16M20 12H4" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-fg mb-2">Nuevo Proyecto</h2>
+        <p class="text-fg-2 text-sm leading-relaxed">
+          Inicia un lienzo en blanco y compártelo al instante. Sé el anfitrión de la sesión.
+        </p>
+      </div>
+
+      <button type="button" class="btn-primary" [class.is-blocked]="!hasName" (click)="crearNuevoLienzo()">
+        <span>Crear Lienzo</span>
+        @if (hasName) {
+          <svg class="arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        }
+      </button>
+    </div>
+
+    <!-- Unirse -->
+    <div class="glass-card group">
+      <div class="card-head text-center">
+        <div class="card-badge">
+          <svg width="32" height="32" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5" />
+            <path d="M4 30v-3a8 8 0 0 1 16 0v3H4z" />
+            <circle cx="25" cy="14" r="4" />
+            <path d="M19 30v-3a6 6 0 0 1 12 0v3H19z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-fg mb-2">Unirme a Sesión</h2>
+        <p class="text-fg-2 text-sm leading-relaxed">
+          ¿Tienes un código de invitación? Ingrésalo a continuación para empezar a colaborar.
+        </p>
+      </div>
+
+      <div>
+        <div class="code-field">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="15" r="4" />
+            <path d="M10.8 12.2 20 3M17 6l2.5 2.5M14 9l2.5 2.5" />
+          </svg>
+          <input type="text" placeholder="Ej: ae0a61be..." [(ngModel)]="joinCode" />
+        </div>
+
+        <button type="button" class="btn-join" [class.is-ready]="hasName && hasCode" (click)="unirseAlLienzo()">
+          <span>Conectar</span>
+          @if (hasName && hasCode) {
+            <svg class="bolt" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          }
+        </button>
+
+        @if (hasCode && !hasName) {
+          <p class="join-hint">Ingresá tu nombre arriba para continuar.</p>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="relative z-10 text-fg-3 text-sm font-medium flex items-center gap-2">
+    <span>Desarrollado para</span>
+    <span class="dot-sep"></span>
+    <span>UML en la nube</span>
+  </div>
+</div>

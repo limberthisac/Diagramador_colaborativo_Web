@@ -1,0 +1,16 @@
+# Puerto en el que correrá la app
+server.port={{serverPort}}
+
+# Configuración de PostgreSQL
+spring.datasource.url=jdbc:postgresql://{{dbHost}}:{{dbPort}}/{{dbName}}
+spring.datasource.username={{dbUser}}
+spring.datasource.password={{dbPassword}}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA / Hibernate
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+
+# Consola SQL (opcional)
+logging.level.org.hibernate.SQL=debug

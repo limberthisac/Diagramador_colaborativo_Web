@@ -1,0 +1,321 @@
+/* Landing. Todos los colores salen de los tokens de styles.css:
+   ningún literal vive acá, para que el tema los gobierne. */
+
+.landing {
+  background: var(--landing-bg);
+  /* El ritmo vertical cede en pantallas bajas para que todo entre sin
+     scroll. Al agregar el campo de nombre, con separaciones fijas la
+     página dejaba de entrar en un portátil. */
+  gap: clamp(16px, 3.2vh, 34px);
+  padding-block: clamp(20px, 4.5vh, 48px);
+}
+
+/* ---------- Orbes de ambiente ---------- */
+
+.orb {
+  position: absolute;
+  width: 384px;
+  height: 384px;
+  border-radius: 50%;
+  filter: blur(128px);
+  mix-blend-mode: var(--glow-blend);
+  pointer-events: none;
+  animation: orb-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.orb-1 {
+  top: -10%;
+  left: -10%;
+  background: var(--glow-1);
+  opacity: var(--orb-1-op);
+  --orb-op: var(--orb-1-op);
+}
+
+.orb-2 {
+  bottom: -10%;
+  right: -10%;
+  background: var(--glow-2);
+  opacity: var(--orb-2-op);
+  --orb-op: var(--orb-2-op);
+  animation-delay: 2s;
+}
+
+/* ---------- Cambio de tema ---------- */
+
+.theme-toggle {
+  position: absolute;
+  top: calc(18px + env(safe-area-inset-top, 0px));
+  right: 18px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--fg-2);
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: color 200ms ease, border-color 200ms ease;
+}
+
+.theme-toggle:hover {
+  color: var(--accent);
+  border-color: var(--card-hover-border);
+}
+
+/* ---------- Título ---------- */
+
+.landing-title {
+  /* Toma la menor entre la medida por ancho y la medida por alto, para que
+     en una pantalla baja el título ceda en vez de empujar el pie fuera. */
+  font-size: clamp(30px, min(6.2vw, 7.6vh), 60px);
+  line-height: 1.05;
+  margin: 0 0 clamp(8px, 1.6vh, 16px);
+  background: linear-gradient(90deg, var(--head-1), var(--head-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-wrap: balance;
+}
+
+.landing-sub {
+  font-size: clamp(14px, min(1.5vw, 2.4vh), 20px);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* ---------- Identidad ---------- */
+
+.name-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.name-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-2);
+}
+
+.req {
+  color: var(--warm);
+  font-weight: 700;
+}
+
+.name-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 6px 16px 6px 6px;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.name-field:focus-within {
+  border-color: var(--accent);
+}
+
+.name-field.is-required {
+  border-color: var(--warm);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warm) 20%, transparent);
+}
+
+.name-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex: none;
+  transition: background 200ms ease;
+}
+
+.name-field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--fg);
+  font-size: 14.5px;
+  padding: 8px 0;
+}
+
+.name-field input::placeholder { color: var(--fg-3); }
+.name-field input:focus { outline: none; }
+
+.name-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--fg-3);
+}
+
+/* ---------- Tarjetas de vidrio ---------- */
+
+.glass-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: clamp(20px, 3.4vh, 32px);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 18px 40px -24px rgb(15 23 42 / 0.22);
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 500ms ease,
+              border-color 500ms ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--card-hover-border);
+  box-shadow: 0 28px 55px -22px var(--card-hover-glow), 0 0 0 1px var(--card-hover-border);
+}
+
+.card-head {
+  margin-bottom: clamp(16px, 3vh, 32px);
+}
+
+.card-badge {
+  width: clamp(56px, 8vh, 80px);
+  height: clamp(56px, 8vh, 80px);
+  border-radius: 50%;
+  margin: 0 auto clamp(12px, 2.4vh, 24px);
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--badge-from), var(--badge-to));
+  color: var(--accent);
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover .card-badge { transform: scale(1.1); }
+
+/* ---------- Botones ---------- */
+
+.btn-primary,
+.btn-join {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 15px 18px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: box-shadow 300ms ease, transform 300ms ease,
+              filter 300ms ease, background 300ms ease, color 300ms ease;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, var(--btn-from), var(--btn-to));
+  color: #fff;
+  box-shadow: var(--btn-glow);
+}
+
+.btn-primary:hover {
+  box-shadow: var(--btn-glow-hover);
+  filter: brightness(1.08);
+}
+
+.btn-primary .arrow { transition: transform 300ms ease; }
+.btn-primary:hover .arrow { transform: translateX(4px); }
+
+.btn-primary.is-blocked {
+  background: var(--surface-2);
+  color: var(--fg-3);
+  box-shadow: none;
+}
+
+.btn-primary.is-blocked:hover {
+  filter: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-join {
+  background: var(--surface-2);
+  color: var(--fg-3);
+}
+
+.btn-join.is-ready {
+  background: linear-gradient(90deg, var(--btn-from), var(--btn-to));
+  color: #fff;
+}
+
+.btn-join.is-ready:hover {
+  box-shadow: var(--btn-glow-hover);
+  transform: scale(1.02);
+}
+
+.btn-join .bolt { transition: transform 300ms ease; }
+.btn-join.is-ready:hover .bolt { transform: rotate(45deg); }
+
+/* ---------- Código de sala ---------- */
+
+.code-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 0 14px;
+  margin-bottom: 16px;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.code-field svg { color: var(--fg-3); flex: none; }
+
+.code-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.code-field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  padding: 15px 0;
+}
+
+.code-field input::placeholder { color: var(--fg-3); }
+.code-field input:focus { outline: none; }
+
+.join-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--warm);
+  text-align: center;
+}
+
+.dot-sep {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}

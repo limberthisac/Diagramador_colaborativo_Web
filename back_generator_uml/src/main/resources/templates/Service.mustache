@@ -1,0 +1,56 @@
+package {{basePackage}}.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import java.util.*;
+import {{basePackage}}.model.{{EntityName}};
+import {{basePackage}}.repository.{{EntityName}}Repository;
+{{#manyToOne}}
+import {{basePackage}}.model.{{TargetEntity}};
+import {{basePackage}}.repository.{{TargetEntity}}Repository;
+{{/manyToOne}}
+{{#oneToOne}}
+import {{basePackage}}.model.{{TargetEntity}};
+import {{basePackage}}.repository.{{TargetEntity}}Repository;
+{{/oneToOne}}
+
+@Service
+@RequiredArgsConstructor
+public class {{EntityName}}Service {
+
+    private final {{EntityName}}Repository repository;
+{{#manyToOne}}
+    private final {{TargetEntity}}Repository {{targetField}}Repository;
+{{/manyToOne}}
+{{#oneToOne}}
+    private final {{TargetEntity}}Repository {{targetField}}Repository;
+{{/oneToOne}}
+
+    public List<{{EntityName}}> findAll() {
+        return repository.findAll();
+    }
+
+    public Optional<{{EntityName}}> findById({{pkType}} id) {
+        return repository.findById(id);
+    }
+
+    public {{EntityName}} save({{EntityName}} e) {
+        return repository.save(e);
+    }
+
+    public void delete({{pkType}} id) {
+        repository.deleteById(id);
+    }
+{{#manyToOne}}
+
+    public Optional<{{TargetEntity}}> find{{TargetEntity}}ById(Long id) {
+        return {{targetField}}Repository.findById(id);
+    }
+{{/manyToOne}}
+{{#oneToOne}}
+
+    public Optional<{{TargetEntity}}> find{{TargetEntity}}ById(Long id) {
+        return {{targetField}}Repository.findById(id);
+    }
+{{/oneToOne}}
+}

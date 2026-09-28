@@ -1,0 +1,393 @@
+/* Panel lateral. Todos los colores salen de los tokens de styles.css. */
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  width: 18rem;
+  height: 100%;
+  padding: 1rem;
+  gap: 1.5rem;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  color: var(--fg);
+}
+
+/* ---------- Header ---------- */
+
+.sp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sp-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: linear-gradient(90deg, var(--head-1), var(--head-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sp-exit {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+}
+
+.sp-exit:hover { opacity: 0.75; }
+
+/* ---------- Encabezados de sección ---------- */
+
+.sp-section-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.sp-section-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--card-hover-border);
+}
+
+.sp-chev {
+  display: flex;
+  color: var(--accent);
+  transition: transform 150ms ease;
+}
+
+.sp-section-btn:hover .sp-chev { transform: scale(1.1); }
+
+/* ---------- Paleta ---------- */
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  cursor: grab;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.palette-item:hover {
+  border-color: var(--card-hover-border);
+  background: var(--surface-2);
+}
+
+.rel-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  flex: none;
+  margin-right: 0.75rem;
+  color: var(--accent);
+}
+
+.palette-label {
+  font-weight: 500;
+  color: var(--fg);
+}
+
+/* ---------- Acciones (importar / exportar) ---------- */
+
+.sp-action {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.sp-action svg { color: var(--fg-2); flex: none; }
+
+.sp-action:hover {
+  border-color: var(--card-hover-border);
+  background: var(--surface-2);
+}
+
+.sp-action:hover svg { color: var(--accent); }
+
+/* ---------- Botón principal ---------- */
+
+.sp-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(90deg, var(--btn-from), var(--btn-to));
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  box-shadow: var(--btn-glow);
+  transition: box-shadow 300ms ease, transform 300ms ease, filter 300ms ease;
+}
+
+.sp-cta:hover {
+  box-shadow: var(--btn-glow-hover);
+  filter: brightness(1.08);
+  transform: scale(1.02);
+}
+
+.sp-copied {
+  display: block;
+  margin-top: 0.5rem;
+  text-align: center;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+/* ---------- Tarjetas ---------- */
+
+.sp-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.sp-card > * + * { margin-top: 0.75rem; }
+
+.sp-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.sp-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  resize: none;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.sp-textarea::placeholder { color: var(--fg-3); }
+
+.sp-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.sp-mic {
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.sp-mic:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.sp-mic.is-recording { border-color: var(--danger); }
+
+.sp-soft {
+  width: 100%;
+  padding: 0.625rem;
+  font-weight: 700;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.sp-soft:hover {
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  color: #fff;
+}
+
+.sp-analyze {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.sp-analyze:hover:not(:disabled) {
+  background: var(--accent-solid);
+  color: #fff;
+}
+
+.sp-analyze:disabled { opacity: 0.7; cursor: default; }
+
+/* ---------- Resultados de validación ---------- */
+
+.sp-result {
+  padding: 0.75rem;
+  background: var(--bg);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.sp-result-ok { border-color: color-mix(in srgb, var(--good) 30%, transparent); }
+.sp-result-err { border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+
+.sp-result-title {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.sp-item { padding-left: 0.5rem; border-left: 2px solid transparent; }
+.sp-item-ok { border-left-color: var(--good); }
+.sp-item-err { border-left-color: var(--danger); }
+
+.sp-tip {
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* ---------- Diálogos de la importación de XMI ---------- */
+
+.sp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 0.5);
+}
+
+.sp-modal {
+  width: 100%;
+  max-width: 26rem;
+  padding: 1.5rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 45px rgb(0 0 0 / 0.35);
+}
+
+.sp-modal-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sp-modal-text {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--fg-2);
+}
+
+.sp-modal-text--warn { color: var(--accent); font-weight: 600; }
+
+.sp-modal-list {
+  max-height: 11rem;
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  overflow-y: auto;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--fg-2);
+}
+
+.sp-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sp-modal-btn {
+  flex: 1 1 auto;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.sp-modal-btn:hover { border-color: var(--card-hover-border); }
+
+/* Reemplazar borra trabajo ajeno, así que se distingue del resto. */
+.sp-modal-btn--danger {
+  color: #fff;
+  background: linear-gradient(90deg, var(--btn-from), var(--btn-to));
+  border-color: transparent;
+}
+
+.sp-modal-btn--ghost { background: transparent; color: var(--fg-2); }
+
+.sp-modal-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--fg-2);
+}

@@ -1,0 +1,128 @@
+/* Editor. Igual que el landing: los colores salen de los tokens,
+   nunca de literales, para que el tema los gobierne. */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.app-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-layout > app-side-panel {
+  flex: 0 0 auto;
+}
+
+.canvas-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
+}
+
+.diagram-container {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  background-color: var(--canvas);
+  background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Asegurar que los elementos arrastrados aparezcan por encima */
+.cdk-drag-preview {
+  z-index: 1000 !important;
+  pointer-events: none;
+}
+
+.joint-paper {
+  flex: 1;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.joint-element { z-index: 10 !important; }
+.joint-cell { z-index: 20 !important; }
+
+svg.joint-paper svg {
+  overflow: visible !important;
+}
+
+/* ---------- Control de zoom ---------- */
+
+.zoom-control {
+  position: absolute;
+  left: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px -6px rgb(15 23 42 / 0.25);
+}
+
+.zoom-control button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.zoom-control button:hover {
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+.zoom-control .sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+/* ---------- Fallback cuando JointJS falla ---------- */
+
+.fallback-entity {
+  width: 180px;
+  border: 2px solid var(--uml-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgb(15 23 42 / 0.2);
+  background-color: var(--uml-body);
+  color: var(--uml-text);
+}
+
+.entity-header {
+  background-color: var(--uml-header);
+  color: var(--uml-header-text);
+  padding: 5px;
+  font-weight: 700;
+  text-align: center;
+  border-bottom: 1px solid var(--uml-border);
+}
+
+.entity-attrs,
+.entity-methods {
+  padding: 5px;
+  border-bottom: 1px solid var(--uml-divider);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}

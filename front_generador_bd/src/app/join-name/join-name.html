@@ -1,0 +1,27 @@
+<div class="jn-backdrop">
+  <div class="jn-dialog animate-fade-in-down">
+
+    <h2 class="jn-title">Te invitaron a un lienzo</h2>
+    <p class="jn-text">Antes de entrar, decinos cómo te llamamos. Así te reconocen los demás en la sala.</p>
+
+    <div class="jn-field" [class.is-required]="missing()">
+      <span class="jn-avatar" [style.background]="avatarColor">{{ initials }}</span>
+      <input id="join-name-input" type="text" maxlength="24" autocomplete="name" placeholder="Tu nombre"
+        [(ngModel)]="name" (ngModelChange)="onInput()" (keyup.enter)="confirm()" autofocus />
+    </div>
+
+    @if (missing()) {
+      <p class="jn-hint">Necesitamos un nombre para que puedas entrar.</p>
+    }
+
+    <button type="button" class="jn-btn" [class.is-blocked]="!hasName" (click)="confirm()">
+      <span>Entrar al lienzo</span>
+      @if (hasName) {
+        <svg class="jn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+      }
+    </button>
+  </div>
+</div>

@@ -1,0 +1,85 @@
+package {{basePackage}}.model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.experimental.SuperBuilder;
+import java.util.*;
+{{#needsOnDeleteImport}}
+    import org.hibernate.annotations.OnDelete;
+    import org.hibernate.annotations.OnDeleteAction;
+{{/needsOnDeleteImport}}
+import com.fasterxml.jackson.annotation.*;
+
+@Entity
+@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+{{#hasPk}}
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.PropertyGenerator.class,
+    property = "{{pkName}}",
+    scope = {{EntityName}}.class
+)
+{{/hasPk}}
+{{#hasTableConstraint}}
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {{{uniqueColumns}}}))
+{{/hasTableConstraint}}
+{{#isParent}}
+    @Inheritance(strategy = InheritanceType.JOINED)
+{{/isParent}}
+public class {{EntityName}}{{#parentClass}} extends {{parentClass}}{{/parentClass}} {
+
+{{#attributes}}
+    {{#isId}}
+        @Id
+        {{#generated}}
+            @GeneratedValue(strategy = GenerationType.IDENTITY)
+        {{/generated}}
+        private {{type}} {{name}};
+    {{/isId}}
+    {{^isId}}
+        private {{type}} {{name}};
+    {{/isId}}
+{{/attributes}}
+
+{{#manyToOne}}
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "{{targetField}}_id")
+    {{#ignoreBackReference}}
+    @JsonIgnoreProperties(value = {"{{ignoreBackReference}}", "hibernateLazyInitializer", "handler"}, allowSetters = true)
+    {{/ignoreBackReference}}
+    {{^ignoreBackReference}}
+    @JsonIgnoreProperties(value = {"hibernateLazyInitializer", "handler"}, allowSetters = true)
+    {{/ignoreBackReference}}
+    private {{TargetEntity}} {{targetField}};
+{{/manyToOne}}
+
+{{#oneToMany}}
+    @OneToMany(mappedBy = "{{mappedBy}}", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = {"{{mappedBy}}", "hibernateLazyInitializer", "handler"}, allowSetters = true)
+    private List<{{TargetEntity}}> {{collectionField}} = new ArrayList<>();
+{{/oneToMany}}
+
+{{#oneToOne}}
+    @OneToOne{{#composition}}(cascade = CascadeType.ALL, orphanRemoval = true){{/composition}}
+    {{#composition}}
+        @OnDelete(action = OnDeleteAction.CASCADE)
+    {{/composition}}
+    @JoinColumn(name = "{{targetField}}_id")
+    private {{TargetEntity}} {{targetField}};
+{{/oneToOne}}
+
+{{#methods}}
+    public {{returnType}} {{name}}({{parameters}}) {
+    // TODO: implementar
+    {{#defaultReturn}}return {{defaultReturn}};{{/defaultReturn}}
+    }
+{{/methods}}
+}

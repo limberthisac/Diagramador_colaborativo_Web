@@ -1,0 +1,373 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Variante `dark:` controlada por atributo, no por el SO.
+   Permite que el toggle de la app gane sobre prefers-color-scheme.
+   ============================================================ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ============================================================
+   TOKENS SEMÁNTICOS — tema claro (por defecto)
+   Ningún componente debe escribir un color literal:
+   todos salen de acá.
+   ============================================================ */
+:root {
+  /* superficies */
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+  --canvas: #fbfcfd;
+  --canvas-dot: #d5dae1;
+
+  /* bordes */
+  --border: #e5e7eb;
+  --border-2: #d8dce2;
+
+  /* texto */
+  --fg: #111827;
+  --fg-2: #4b5563;
+  --fg-3: #9ca3af;
+
+  /* acento: azul en claro */
+  --accent: #0d85d8;
+  --accent-solid: #1668cf;
+  --accent-soft: #dbeafe;
+  --accent-contrast: #ffffff;
+  --warm: #f59e5a;
+  --good: #22c55e;
+  --danger: #ef4444;
+
+  /* landing: orbes de ambiente */
+  --landing-bg: linear-gradient(155deg, #fbf8f4 0%, #f7f8fa 48%, #f3f5f8 100%);
+  --glow-1: #f6a763;
+  --glow-2: #ffc089;
+  --glow-blend: normal;
+  --orb-1-op: 0.45;
+  --orb-2-op: 0.38;
+
+  /* landing: título con degradado */
+  --head-1: #3aa5ea;
+  --head-2: #0b6fc0;
+
+  /* tarjetas de vidrio */
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --card-hover-border: rgba(13, 133, 216, 0.35);
+  --card-hover-glow: rgba(13, 133, 216, 0.18);
+  --badge-from: rgba(13, 133, 216, 0.20);
+  --badge-to: rgba(11, 111, 192, 0.08);
+
+  /* botón primario */
+  --btn-from: #1276c9;
+  --btn-to: #0b6fc0;
+  --btn-glow: 0 0 20px rgba(245, 158, 90, 0.45);
+  --btn-glow-hover: 0 0 30px rgba(245, 158, 90, 0.75);
+
+  /* diagrama UML en el canvas */
+  --uml-border: #2563eb;
+  --uml-header: #dbeafe;
+  --uml-header-text: #111827;
+  --uml-body: #ffffff;
+  --uml-text: #1f2937;
+  --uml-divider: #bfdbfe;
+  --link: #334155;
+  --uml-selected: #f97316;
+}
+
+/* ============================================================
+   TOKENS SEMÁNTICOS — tema oscuro
+   El acento vira de azul a naranja.
+   ============================================================ */
+[data-theme="dark"] {
+  --bg: #0b0f16;
+  --surface: #0f151e;
+  --surface-2: #1b2430;
+  --canvas: #0b0f16;
+  --canvas-dot: #263040;
+
+  --border: #1f2937;
+  --border-2: #2b3644;
+
+  --fg: #f3f4f6;
+  --fg-2: #9ca3af;
+  --fg-3: #6b7280;
+
+  --accent: #fb8b3c;
+  --accent-solid: #f97316;
+  --accent-soft: #2a1a10;
+  --accent-contrast: #ffffff;
+  --warm: #fb8b3c;
+  --good: #22c55e;
+  --danger: #f87171;
+
+  --landing-bg: #0a0d12;
+  --glow-1: #ea580c;
+  --glow-2: #f97316;
+  --glow-blend: screen;
+  --orb-1-op: 0.30;
+  --orb-2-op: 0.20;
+
+  --head-1: #fb923c;
+  --head-2: #ea580c;
+
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-border: rgba(255, 255, 255, 0.10);
+  --card-hover-border: rgba(249, 115, 22, 0.30);
+  --card-hover-glow: rgba(249, 115, 22, 0.20);
+  --badge-from: rgba(249, 115, 22, 0.20);
+  --badge-to: rgba(234, 88, 12, 0.10);
+
+  --btn-from: #f97316;
+  --btn-to: #ea580c;
+  --btn-glow: 0 0 20px rgba(249, 115, 22, 0.30);
+  --btn-glow-hover: 0 0 30px rgba(249, 115, 22, 0.60);
+
+  --uml-border: #4a8db5;
+  --uml-header: #16475f;
+  --uml-header-text: #ffffff;
+  --uml-body: #0f1a24;
+  --uml-text: #cbd5e1;
+  --uml-divider: #2f5f7a;
+  --link: #94a3b8;
+  --uml-selected: #fb923c;
+}
+
+/* ============================================================
+   Puente hacia Tailwind: expone los tokens como utilidades
+   (bg-surface, text-fg, border-line…).
+   `inline` es necesario para que la utilidad apunte a la
+   variable y no a una copia de su valor actual.
+   ============================================================ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-canvas: var(--canvas);
+
+  --color-line: var(--border);
+  --color-line-2: var(--border-2);
+
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+
+  --color-accent: var(--accent);
+  --color-accent-solid: var(--accent-solid);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-warm: var(--warm);
+  --color-good: var(--good);
+  --color-danger: var(--danger);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* El cambio de tema no debe parecer un parpadeo */
+body,
+.themed {
+  transition: background-color 250ms ease, color 250ms ease;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   JointJS — el canvas se pinta con atributos de presentación
+   desde TypeScript. Los atributos de presentación pierden
+   frente a cualquier regla CSS, así que estas reglas los
+   someten al tema sin tocar la lógica del diagrama.
+   ============================================================ */
+.joint-paper {
+  background: var(--canvas) !important;
+}
+
+/* Conectores */
+.joint-link .connection {
+  stroke: var(--link);
+}
+
+.joint-link .marker-source,
+.joint-link .marker-target {
+  fill: var(--link);
+  stroke: var(--link);
+}
+
+/* Punta hueca (herencia, agregación): se rellena con el color del lienzo
+   para tapar la línea que pasa por debajo, no con transparencia. */
+.joint-link [data-hollow="true"] {
+  fill: var(--canvas);
+  stroke: var(--link);
+}
+
+/* Punta abierta (dependencia): dos líneas sin cerrar. Necesita su propia
+   regla porque la de arriba rellena todas las puntas, y el CSS le gana al
+   atributo `fill="none"` que pone JointJS. */
+.joint-link [data-open="true"] {
+  fill: none;
+  stroke: var(--link);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.joint-link .label text,
+.joint-link .label tspan {
+  fill: var(--fg-2);
+}
+
+/* Clases UML */
+.joint-element .uml-outer {
+  fill: var(--uml-body);
+  stroke: var(--uml-border);
+}
+
+.joint-element .uml-class-name-rect {
+  fill: var(--uml-header);
+}
+
+.joint-element .uml-class-name-text {
+  fill: var(--uml-header-text);
+}
+
+.joint-element .uml-class-attrs-text,
+.joint-element .uml-class-methods-text {
+  fill: var(--uml-text);
+}
+
+/* El divisor del nombre cierra el encabezado: mismo color y peso que el borde.
+   El de atributos separa dos secciones del cuerpo y se mantiene discreto. */
+.joint-element .sep-name {
+  stroke: var(--uml-border);
+}
+
+.joint-element .sep-attrs {
+  stroke: var(--uml-divider);
+}
+
+/* Puertos de conexión */
+.joint-element .joint-port circle,
+.joint-element .joint-port-body {
+  stroke: var(--uml-border);
+  fill: var(--uml-body);
+}
+
+.joint-element.highlighted .uml-outer,
+.joint-element.highlighted rect,
+.joint-element.highlighted path {
+  stroke: var(--uml-selected) !important;
+}
+
+/* Editor inline del lienzo (nombre, atributos, métodos, cardinalidades).
+   Se inyecta en <body> desde edition.service.ts, así que no lo alcanza el
+   CSS encapsulado de ningún componente y tiene que vivir acá.
+   Sin un `color` explícito heredaba el del body: texto claro sobre fondo
+   blanco fijo, ilegible en modo oscuro. */
+.uml-inline-editor {
+  position: absolute;
+  z-index: 1000;
+  padding: 5px 7px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--uml-body);
+  color: var(--uml-text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.45;
+  resize: none;
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent),
+              0 6px 18px -8px rgb(0 0 0 / 0.5);
+}
+
+.uml-inline-editor::placeholder { color: var(--fg-3); }
+
+.uml-inline-editor--label {
+  font-size: 12px;
+  min-width: 60px;
+}
+
+/* Etiqueta de cardinalidad mientras se edita */
+.uml-label-editing {
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+
+/* Aviso flotante mientras se crea una relación. Lo inyecta relationship.service
+   dentro del contenedor del lienzo, así que no lo alcanza el CSS encapsulado de
+   ningún componente y tiene que vivir acá, como el editor inline. */
+.rel-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%) translateY(6px);
+  z-index: 900;
+  max-width: min(520px, calc(100% - 32px));
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg-2);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.45);
+  pointer-events: none;   /* no debe robar los clics del lienzo */
+  opacity: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.rel-hint.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Scrollbar discreta, coherente con el tema */
+.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--fg-3); }
+
+/* ============================================================
+   Animaciones compartidas
+   ============================================================ */
+@keyframes fade-in-down {
+  from { opacity: 0; transform: translateY(-14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes orb-pulse {
+  0%, 100% { opacity: var(--orb-op); }
+  50%      { opacity: calc(var(--orb-op) * 0.5); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

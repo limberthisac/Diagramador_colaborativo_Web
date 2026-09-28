@@ -1,0 +1,455 @@
+<div class="side-panel custom-scrollbar">
+
+  <!-- Header -->
+  <div class="sp-header">
+    <h2 class="sp-title">Herramientas UML</h2>
+    <button class="sp-exit" (click)="goHome()">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+      Salir
+    </button>
+  </div>
+
+  <!-- Paleta de elementos -->
+  <button (click)="showPalette=!showPalette" class="sp-section-btn group">
+    <span>Paleta de elementos</span>
+    <span class="sp-chev">
+      @if (showPalette) {
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+          class="size-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      } @else {
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+          class="size-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+        </svg>
+      }
+    </span>
+  </button>
+
+  @if (showPalette) {
+    <div class="space-y-3 animate-fade-in-down">
+
+      <div class="palette-item" cdkDrag [cdkDragData]="{ type: 'class' }" (cdkDragEnded)="onDragEnded($event)">
+        <span class="rel-icon">
+          <svg width="24" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linejoin="round">
+            <path d="M12 3 3 7.5l9 4.5 9-4.5L12 3Z" fill="currentColor" fill-opacity=".2" />
+            <path d="m3 12 9 4.5 9-4.5" />
+            <path d="m3 16.5 9 4.5 9-4.5" />
+          </svg>
+        </span>
+        <span class="palette-label">Clase UML</span>
+      </div>
+
+      <div class="palette-item" cdkDrag [cdkDragData]="{ type: 'association' }" (cdkDragEnded)="onDragEnded($event)">
+        <span class="rel-icon">
+          <svg width="46" height="16" viewBox="0 0 46 16" fill="none">
+            <path d="M2 8 L44 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span class="palette-label">Asociación</span>
+      </div>
+
+      <div class="palette-item" cdkDrag [cdkDragData]="{ type: 'generalization' }" (cdkDragEnded)="onDragEnded($event)">
+        <span class="rel-icon">
+          <svg width="46" height="16" viewBox="0 0 46 16" fill="none">
+            <path d="M2 8 L31 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+            <path d="M44 8 L31 14 L31 2 Z" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linejoin="round" />
+          </svg>
+        </span>
+        <span class="palette-label">Herencia</span>
+      </div>
+
+      <div class="palette-item" cdkDrag [cdkDragData]="{ type: 'aggregation' }" (cdkDragEnded)="onDragEnded($event)">
+        <span class="rel-icon">
+          <svg width="46" height="16" viewBox="0 0 46 16" fill="none">
+            <path d="M18 8 L44 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+            <path d="M2 8 L10 2 L18 8 L10 14 Z" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linejoin="round" />
+          </svg>
+        </span>
+        <span class="palette-label">Agregación</span>
+      </div>
+
+      <div class="palette-item" cdkDrag [cdkDragData]="{ type: 'composition' }" (cdkDragEnded)="onDragEnded($event)">
+        <span class="rel-icon">
+          <svg width="46" height="16" viewBox="0 0 46 16" fill="none">
+            <path d="M18 8 L44 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+            <path d="M2 8 L10 2 L18 8 L10 14 Z" fill="currentColor" stroke="currentColor" stroke-width="2"
+              stroke-linejoin="round" />
+          </svg>
+        </span>
+        <span class="palette-label">Composición</span>
+      </div>
+
+      <div class="palette-item" cdkDrag [cdkDragData]="{ type: 'dependency' }" (cdkDragEnded)="onDragEnded($event)">
+        <span class="rel-icon">
+          <svg width="46" height="16" viewBox="0 0 46 16" fill="none">
+            <path d="M2 8 L34 8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+              stroke-dasharray="5 4" />
+            <path d="M34 2.5 L43.5 8 L34 13.5" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linejoin="round" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span class="palette-label">Dependencia</span>
+      </div>
+
+      <div class="palette-item" cdkDrag [cdkDragData]="{ type: 'associationClass' }"
+        (cdkDragEnded)="onDragEnded($event)">
+        <span class="rel-icon">
+          <svg width="46" height="16" viewBox="0 0 46 16" fill="none">
+            <path d="M2 2.5 L44 2.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+            <!-- Sin stroke-linecap: las tapas redondeadas suman media pluma en cada
+                 extremo de cada guion y taparían los espacios de una línea tan corta. -->
+            <path d="M23 2.5 L23 9.5" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2 2" />
+            <rect x="15.5" y="9.5" width="15" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.8" />
+          </svg>
+        </span>
+        <span class="palette-label">Clase de asociación</span>
+      </div>
+    </div>
+  }
+
+  <div class="w-full space-y-4">
+
+    <!-- Importaciones -->
+    <div>
+      <button class="sp-section-btn group mb-3" (click)="showActionsImports = !showActionsImports">
+        <span>Importaciones</span>
+        <span class="sp-chev">
+          @if (showActionsImports) {
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor" class="size-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor" class="size-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+          }
+        </span>
+      </button>
+
+      @if (showActionsImports) {
+        <div class="flex flex-col gap-2 animate-fade-in-down mb-4">
+          <label for="imagenImport" class="sp-action">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <path d="M16 3v5H8V3" />
+              <rect x="8" y="15" width="8" height="4" rx="1" />
+            </svg>
+            <span>Importar Imagen</span>
+          </label>
+          <input type="file" id="imagenImport" accept="image/*" class="hidden" (change)="onImportImage($event)" />
+
+          <label for="xmiImport" class="sp-action">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <path d="M14 2v6h6" />
+              <path d="M12 18v-6" />
+              <path d="m9 15 3 3 3-3" />
+            </svg>
+            <span>{{ importing() ? 'Leyendo archivo…' : 'Importar de Enterprise Architect' }}</span>
+          </label>
+          <input type="file" id="xmiImport" accept=".xml,.xmi" class="hidden" (change)="onImportXmi($event)" />
+        </div>
+      }
+    </div>
+
+    <!-- Importación de XMI: elegir entre pisar el diagrama o sumarle lo importado -->
+    @if (pendingImport(); as imported) {
+      <div class="sp-modal-backdrop">
+        <div class="sp-modal">
+          <h3 class="sp-modal-title">Ya hay un diagrama en el lienzo</h3>
+          <p class="sp-modal-text">
+            El archivo trae {{ imported.diagram.classes.length }} clases y
+            {{ imported.diagram.relationships.length }} relaciones.
+            ¿Qué hacemos con lo que ya está?
+          </p>
+          <div class="sp-modal-actions">
+            <button class="sp-modal-btn sp-modal-btn--danger" (click)="applyImport(imported, true)">
+              Reemplazar
+            </button>
+            <button class="sp-modal-btn" (click)="applyImport(imported, false)">
+              Agregar
+            </button>
+            <button class="sp-modal-btn sp-modal-btn--ghost" (click)="cancelImport()">
+              Cancelar
+            </button>
+          </div>
+          <p class="sp-modal-note">Reemplazar borra el diagrama actual para todos los de la sala.</p>
+        </div>
+      </div>
+    }
+
+    <!-- Resultado de la importación, con lo que no se pudo representar -->
+    @if (importReport(); as report) {
+      <div class="sp-modal-backdrop">
+        <div class="sp-modal">
+          <h3 class="sp-modal-title">Diagrama importado</h3>
+          <p class="sp-modal-text">
+            Entraron {{ report.classes }} clases y {{ report.relationships }} relaciones.
+          </p>
+          @if (report.warnings.length) {
+            <p class="sp-modal-text sp-modal-text--warn">
+              {{ report.warnings.length }} cosas necesitan tu atención:
+            </p>
+            <ul class="sp-modal-list">
+              @for (w of report.warnings; track w) {
+                <li>{{ w }}</li>
+              }
+            </ul>
+          }
+          <div class="sp-modal-actions">
+            <button class="sp-modal-btn" (click)="dismissImportReport()">Entendido</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Exportaciones -->
+    <div>
+      <button class="sp-section-btn group mb-3" (click)="showActions = !showActions">
+        <span>Exportaciones</span>
+        <span class="sp-chev">
+          @if (showActions) {
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor" class="size-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor" class="size-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+          }
+        </span>
+      </button>
+
+      @if (showActions) {
+        <div class="flex flex-col gap-2 animate-fade-in-down mb-4">
+
+          <button class="sp-action" (click)="onSaveClicked()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <path d="M16 3v5H8V3" />
+              <rect x="8" y="15" width="8" height="4" rx="1" />
+            </svg>
+            <span>A BD / Proyecto</span>
+          </button>
+
+          <button class="sp-action" (click)="exportImage()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <circle cx="8" cy="10" r="2" />
+              <path d="M21 19l-5-7-4 5-3-4-4 6" />
+            </svg>
+            <span>Como Imagen (.png)</span>
+          </button>
+
+          <button class="sp-action" (click)="exportSql()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="7" rx="8" ry="3" />
+              <path d="M4 7v10c0 1.66 3.58 3 8 3s8-1.34 8-3V7" />
+              <path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" />
+            </svg>
+            <span>Código SQL</span>
+          </button>
+
+          <!-- Oculto: Flutter UI
+          <button class="sp-action" (click)="onGenerateFrontend()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <path d="M16 3v5H8V3" />
+              <rect x="8" y="15" width="8" height="4" rx="1" />
+            </svg>
+            <span>Flutter UI</span>
+          </button>
+          -->
+
+          <button class="sp-action" (click)="exportJson()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+            <span>Postman JSON</span>
+          </button>
+
+          <!-- Oculto: Swagger YAML
+          <button class="sp-action" (click)="exportSwagger()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+              </path>
+            </svg>
+            <span>Swagger YAML</span>
+          </button>
+          -->
+
+          <button class="sp-action" (click)="exportEnterpriseArchitect()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            <span>A Enterprise Architect (XML)</span>
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Copiar código de sala -->
+    <div class="pt-2">
+      <button class="sp-cta" (click)="copyRoomCode()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+          class="size-5">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+        </svg>
+        Copiar código de sala
+      </button>
+      @if (copied() == true) {
+        <small class="sp-copied animate-fade-in-down">¡Copiado al portapapeles!</small>
+      }
+    </div>
+
+    <!-- Generar modelo con IA -->
+    <div class="sp-card">
+      <h4 class="sp-card-title">
+        <span class="text-xl">🤖</span> Generar modelo
+      </h4>
+
+      <div class="flex space-x-2">
+        <textarea [(ngModel)]="prompt" class="sp-textarea" placeholder="Describe tu modelo aquí..."
+          rows="3"></textarea>
+
+        <button (click)="toggleVoiceInput()" class="sp-mic" [class.is-recording]="recognizing()">
+          @if (recognizing() == true) {
+            <span class="animate-pulse">⏹️</span>
+          } @else {
+            <span>🎤</span>
+          }
+        </button>
+      </div>
+
+      <button class="sp-soft" (click)="onGenerate()">Generar con IA</button>
+    </div>
+
+    <!-- Sugerencias / validación -->
+    <div class="sp-card">
+      <div class="flex justify-between items-center cursor-pointer" (click)="toggleValidationPanel()">
+        <h4 class="sp-card-title mb-0">
+          <span class="text-xl">🔍</span> Sugerencias
+        </h4>
+        <span class="text-accent">
+          @if (validationCollapsed()) {
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+              <line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" stroke-width="2" />
+              <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" />
+            </svg>
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+              <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" />
+            </svg>
+          }
+        </span>
+      </div>
+
+      <button class="sp-analyze" (click)="analyzeNow()" [disabled]="analyzingModel()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="inline-block" width="18" height="18" viewBox="0 0 24 24"
+          fill="none">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+          <line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        @if (!analyzingModel()) {
+          <span>Analizar modelo</span>
+        }
+        @if (analyzingModel()) {
+          <span>Analizando...</span>
+        }
+      </button>
+
+      @if (!validationCollapsed()) {
+        <div class="mt-4 text-sm text-fg-2 space-y-4 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+          @if (analyzingModel()) {
+            <p class="italic text-accent flex items-center justify-center py-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="inline-block mr-2 animate-spin" width="18" height="18"
+                viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.3" />
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+              </svg>
+              Revisando modelo...
+            </p>
+          } @else if (!validationResult()) {
+            <p class="italic text-fg-3 text-center py-2">No hay validaciones aún.</p>
+          } @else {
+            <!-- Válidas -->
+            <div class="sp-result sp-result-ok">
+              <h5 class="sp-result-title text-good">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Relaciones válidas
+              </h5>
+              <ul class="space-y-2">
+                @for (v of validationResult().analysis.validas; track v) {
+                  <li class="sp-item sp-item-ok">
+                    <strong class="text-fg block">{{ v.relacion }}</strong>
+                    <small class="text-fg-2">{{ v.razon }}</small>
+                  </li>
+                }
+              </ul>
+            </div>
+
+            <!-- Errores -->
+            <div class="sp-result sp-result-err">
+              <h5 class="sp-result-title text-danger">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Errores
+              </h5>
+              <ul class="space-y-3">
+                @for (e of validationResult().analysis.errores; track e) {
+                  <li class="sp-item sp-item-err">
+                    <strong class="text-fg block">{{ e.relacion }}</strong>
+                    <small class="text-fg-2 block mb-1">{{ e.problema }}</small>
+                    <div class="sp-tip">
+                      <em class="text-xs">💡 {{ e.sugerencia }}</em>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (isLoadingImage() || isLoadingChatbox() || isLoadingGeneratefrontend() || isLoadingGenerateBackend()) {
+    <app-spinner />
+  }
+</div>

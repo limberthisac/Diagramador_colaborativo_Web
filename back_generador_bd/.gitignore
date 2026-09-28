@@ -1,0 +1,70 @@
+# =========================================
+# Python
+# =========================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.manifest
+*.spec
+
+# =========================================
+# Entornos virtuales
+# =========================================
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# =========================================
+# Django
+# =========================================
+*.log
+*.pot
+*.pyc
+db.sqlite3
+db.sqlite3-journal
+
+# Migraciones (opcional: puedes versionarlas si quieres)
+*/migrations/*
+!*/migrations/__init__.py
+
+# Archivos de entorno
+.env
+*.env
+
+# =========================================
+# IDEs / Editores
+# =========================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# =========================================
+# Cobertura de pruebas
+# =========================================
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.pytest_cache/
+
+# =========================================
+# Archivos de sistema
+# =========================================
+.DS_Store
+Thumbs.db

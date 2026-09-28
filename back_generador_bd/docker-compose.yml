@@ -1,0 +1,27 @@
+
+services:
+  django:
+    build: .
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=uml_bd
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=071104
+      - CORS_ALLOWED_ORIGINS=http://localhost:4000,http://angular-app:4000
+    command: >
+      sh -c "python manage.py migrate &&
+             daphne -b 0.0.0.0 -p 8000 diagramador_uml.asgi:application"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    env_file:
+      - .env  
+
+  redis:
+    image: redis:7
+    container_name: redis_server
+    ports:
+      - "6379:6379"

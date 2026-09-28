@@ -1,0 +1,101 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+
+.brand svg {
+  color: var(--accent);
+  flex: none;
+}
+
+/* En pantallas chicas el nombre completo empuja todo lo demás fuera */
+@media (max-width: 560px) {
+  .brand-name { display: none; }
+}
+
+.spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.peers {
+  display: flex;
+  align-items: center;
+}
+
+.peer {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  margin-left: -8px;
+  cursor: default;
+}
+
+.peer:first-child { margin-left: 0; }
+
+/* Punto de actividad: quien está en el registro está conectado ahora.
+   El borde del color de la barra lo recorta del avatar de al lado. */
+.peer::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--good);
+  border: 2px solid var(--surface);
+}
+
+.peer-count {
+  font-size: 12.5px;
+  color: var(--fg-3);
+  margin-left: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Mismo botón circular que la pantalla de inicio, para que el cambio de
+   tema se reconozca igual en las dos pantallas. */
+.theme-toggle {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--fg-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: color 200ms ease, border-color 200ms ease, background 200ms ease;
+}
+
+.theme-toggle:hover {
+  color: var(--accent);
+  border-color: var(--card-hover-border);
+  background: var(--surface-2);
+}
