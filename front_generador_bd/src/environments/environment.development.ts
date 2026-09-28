@@ -12,10 +12,13 @@ export const environment = {
 
     // ENLACES DE PRODUCCIÓN (Railway)
     // endpoint_python: `https://diagramadorumlcolaborativo-production.up.railway.app/`,
-    endpoint_python: `https://diagramadorcolaborativouml-production.up.railway.app/`,
+    // endpoint_python: `https://diagramadorcolaborativouml-production.up.railway.app/`,
+    endpoint_python: `https://diagramadorcolaborativouml-production-4d35.up.railway.app/`,
     // WebSocket_python: `diagramadorumlcolaborativo-production.up.railway.app`,
-    WebSocket_python: `diagramadorcolaborativouml-production.up.railway.app`,
+    // WebSocket_python: `diagramadorcolaborativouml-production.up.railway.app`,
+    WebSocket_python: `diagramadorcolaborativouml-production-4d35.up.railway.app`,
     // endpoint_java: `https://extraordinary-alignment-production.up.railway.app/`
-    endpoint_java: `https://generadorbackendspringboot-production.up.railway.app/`
+    // endpoint_java: `https://generadorbackendspringboot-production.up.railway.app/`
+    endpoint_java: `https://generadorbackendspringboot-production-1107.up.railway.app/`
 };
 
