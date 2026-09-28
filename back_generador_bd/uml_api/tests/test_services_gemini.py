@@ -9,6 +9,7 @@ from uml_api.services.services_gemini import (
     GeminiTimeoutError,
     GeminiUnavailableError,
     _request_gemini,
+    call_gemini,
 )
 from uml_api.views import GenerateUMLView
 
@@ -95,6 +96,22 @@ class GeminiRequestTests(SimpleTestCase):
 
         post.assert_called_once()
 
+    @patch("uml_api.services.services_gemini._request_gemini")
+    def test_includes_current_diagram_in_model_prompt(self, request_gemini):
+        request_gemini.return_value = {
+            "candidates": [{"content": {"parts": [{"text": "{}"}]}}]
+        }
+        current_diagram = {
+            "classes": [{"id": "class-1", "name": "Cliente"}],
+            "relationships": [],
+        }
+
+        call_gemini("elimina la clase Cliente", current_diagram)
+
+        sent_text = request_gemini.call_args.args[0]["contents"][0]["parts"][0]["text"]
+        self.assertIn("DIAGRAMA ACTUAL DEL USUARIO", sent_text)
+        self.assertIn('"name": "Cliente"', sent_text)
+
 
 class GenerateUMLViewErrorTests(SimpleTestCase):
     def setUp(self):
@@ -137,3 +154,27 @@ class GenerateUMLViewErrorTests(SimpleTestCase):
         result = self.view(request)
 
         self.assertEqual(result.status_code, 502)
+
+    @patch("uml_api.views.call_gemini", return_value='{"classes": [], "relationships": []}')
+    def test_passes_current_diagram_to_gemini(self, call_gemini_mock):
+        current_diagram = {
+            "classes": [{"id": "class-1", "name": "Cliente"}],
+            "relationships": [],
+        }
+        request = self.factory.post(
+            "/api/chatbot/",
+            {
+                "prompt": "elimina la clase Cliente",
+                "currentDiagram": current_diagram,
+                "source": "voice",
+            },
+            format="json",
+        )
+
+        result = self.view(request)
+
+        self.assertEqual(result.status_code, 200)
+        call_gemini_mock.assert_called_once_with(
+            "elimina la clase Cliente",
+            current_diagram,
+        )

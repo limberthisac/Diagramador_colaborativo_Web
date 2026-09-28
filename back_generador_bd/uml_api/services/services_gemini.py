@@ -98,7 +98,16 @@ def _extract_text(result):
         ) from exc
 
 
-def call_gemini(prompt: str):
+def call_gemini(prompt: str, current_diagram=None):
+    if not isinstance(current_diagram, dict):
+        current_diagram = {"classes": [], "relationships": []}
+
+    diagram_context = json.dumps(
+        current_diagram,
+        ensure_ascii=False,
+        indent=2,
+    )
+
     # Detectar si es una solicitud de eliminación
     delete_keywords = ["eliminar", "elimina", "borra", "borrar",
                        "quitar", "quita", "remover", "remueve",
@@ -111,7 +120,8 @@ def call_gemini(prompt: str):
                      "edites", "edita", "editar",
                      "modifiques", "modifica", "modificar",
                      "actualices", "actualizar", "actualiza",
-                     "añadir", "añade"
+                     "añadir", "añade", "agregar", "agrega", "agregue",
+                     "incorporar", "incorpora"
                      ]
     is_edit_request = any(keyword in prompt.lower()
                           for keyword in edit_keywords)
@@ -171,6 +181,12 @@ Ejemplos:
 
 Prompt del usuario:
 {prompt}
+
+DIAGRAMA ACTUAL DEL USUARIO:
+{diagram_context}
+
+Usa exclusivamente los nombres e identificadores que aparecen en el diagrama actual.
+Si el elemento solicitado no existe, devuelve las listas vacías correspondientes.
 """
     elif is_edit_request:
         # Prompt para edición - devolver dos JSONs
@@ -250,6 +266,12 @@ REGLAS CRÍTICAS:
 
 Prompt del usuario:
 {prompt}
+
+DIAGRAMA ACTUAL DEL USUARIO:
+{diagram_context}
+
+El bloque "original" debe copiar del diagrama actual únicamente los elementos afectados.
+Conserva exactamente sus IDs. No inventes clases, atributos ni relaciones existentes.
 """
     else:
         # Prompt normal - devolver un solo JSON
@@ -286,6 +308,13 @@ NO devuelvas nada más, solo el JSON.
 
 Prompt del usuario:
 {prompt}
+
+DIAGRAMA ACTUAL DEL USUARIO:
+{diagram_context}
+
+Si la instrucción crea elementos nuevos, devuelve solamente los elementos nuevos.
+Si crea una relación entre clases existentes, utiliza los IDs exactos del diagrama actual.
+No vuelvas a crear una clase que ya existe.
 """
 
     data = {

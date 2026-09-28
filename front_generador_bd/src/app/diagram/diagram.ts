@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, ElementRef, HostListener, Inject, NgZone, PLATFORM_ID, ViewChild, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { CdkDragEnd, CdkDropListGroup, CdkDropList } from '@angular/cdk/drag-drop';
-import { SidePanel } from "../side-panel/side-panel";
+import { DiagramGenerationRequest, SidePanel } from "../side-panel/side-panel";
 import { DiagramService } from '../../services/diagram/diagram.service';
 import { FallbackService } from '../../services/diagram/fallback.service';
 import { RelationshipService } from '../../services/diagram/relationship.service';
@@ -74,8 +74,8 @@ export class Diagram implements AfterViewInit {
 
           this.sidePanel.saveClicked.subscribe(() => this.saveDiagram());
 
-          this.sidePanel.generateClicked.subscribe((prompt: string) => {
-            this.generateFromPrompt(prompt);
+          this.sidePanel.generateClicked.subscribe((request: DiagramGenerationRequest) => {
+            this.generateFromPrompt(request.prompt, request.source);
           });
           
           this.umlValidation.connect(
@@ -112,10 +112,11 @@ export class Diagram implements AfterViewInit {
     this.backendGen.generateBackend(json, 'mi-backend.zip');
   }
 
-  generateFromPrompt(prompt: string) {
+  generateFromPrompt(prompt: string, source: 'text' | 'voice' = 'text') {
     this.chatbot.errorMessage.set(null);
     this.chatbot.isLoading.set(true);
-    this.chatbot.generateDiagram(prompt).pipe(
+    const currentDiagram = this.diagramService.exportToJson();
+    this.chatbot.generateDiagram(prompt, currentDiagram, source).pipe(
       timeout(150000),
       finalize(() => this.chatbot.isLoading.set(false))
     ).subscribe({

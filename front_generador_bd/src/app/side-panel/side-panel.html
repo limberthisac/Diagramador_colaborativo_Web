@@ -343,11 +343,20 @@
         </div>
       }
 
+      @if (voiceError()) {
+        <div class="sp-inline-error" role="alert">
+          {{ voiceError() }}
+        </div>
+      }
+
       <div class="flex space-x-2">
         <textarea [(ngModel)]="prompt" class="sp-textarea" placeholder="Describe tu modelo aquí..."
           rows="3"></textarea>
 
-        <button (click)="toggleVoiceInput()" class="sp-mic" [class.is-recording]="recognizing()">
+        <button (click)="toggleVoiceInput()" class="sp-mic" [class.is-recording]="recognizing()"
+          [disabled]="isLoadingChatbox()" type="button"
+          [attr.aria-label]="recognizing() ? 'Detener y enviar instrucción' : 'Dar una instrucción por voz'"
+          [title]="recognizing() ? 'Detener y enviar' : 'Dar una instrucción por voz'">
           @if (recognizing() == true) {
             <span class="animate-pulse">⏹️</span>
           } @else {
@@ -355,6 +364,10 @@
           }
         </button>
       </div>
+
+      @if (recognizing()) {
+        <p class="sp-voice-status" role="status">Escuchando… La instrucción se enviará automáticamente.</p>
+      }
 
       <button class="sp-soft" (click)="onGenerate()" [disabled]="isLoadingChatbox()">Generar con IA</button>
 

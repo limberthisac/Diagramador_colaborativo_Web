@@ -50,8 +50,18 @@ class GenerateUMLView(APIView):
         if not prompt:
             return Response({"error": "El campo 'prompt' es requerido"}, status=status.HTTP_400_BAD_REQUEST)
 
+        current_diagram = request.data.get(
+            "currentDiagram",
+            {"classes": [], "relationships": []},
+        )
+        if not isinstance(current_diagram, dict):
+            return Response(
+                {"error": "El campo 'currentDiagram' debe ser un objeto JSON"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
-            output = call_gemini(prompt)
+            output = call_gemini(prompt, current_diagram)
         except (GeminiTimeoutError, GeminiUnavailableError, GeminiResponseError) as error:
             return _gemini_error_response(error)
         # output = call_groq(prompt)

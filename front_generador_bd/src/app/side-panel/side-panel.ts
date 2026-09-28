@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, PLATFORM_ID, Inject, signal, inject } from '@angular/core';
+import { Component, Output, EventEmitter, PLATFORM_ID, Inject, NgZone, signal, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { DragDropModule, CdkDragEnd, CdkDragStart } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
@@ -14,6 +14,11 @@ import { BackendGeneratorService } from '../../services/exports/backend-generato
 import { XmiExportService } from '../../services/exports/xmi-export.service';
 import { XmiImportService, XmiImportResult } from '../../services/imports/xmi-import.service';
 
+export interface DiagramGenerationRequest {
+  prompt: string;
+  source: 'text' | 'voice';
+}
+
 
 @Component({
   selector: 'app-side-panel',
@@ -27,7 +32,7 @@ export class SidePanel {
   private backendGeneratorService=inject(BackendGeneratorService);
   @Output() elementDragged = new EventEmitter<CdkDragEnd>();
   @Output() saveClicked = new EventEmitter<void>();
-  @Output() generateClicked = new EventEmitter<string>();
+  @Output() generateClicked = new EventEmitter<DiagramGenerationRequest>();
 
   public showActions: boolean = false;
   public showActionsImports: boolean = false;
@@ -41,7 +46,10 @@ export class SidePanel {
   roomId: string | null = null;
   copied = signal<boolean>(false);
   recognizing = signal<boolean>(false);
+  voiceError = signal<string | null>(null);
   recognition: any;
+  private finalVoiceTranscript = '';
+  private voiceRecognitionFailed = false;
   isBrowser: boolean;
 
   constructor(
@@ -53,6 +61,7 @@ export class SidePanel {
     private umlImageService: UmlImageServiceTs,
     private xmiExportService: XmiExportService,
     private xmiImportService: XmiImportService,
+    private ngZone: NgZone,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId); // ✅ detecta si estamos en navegador
@@ -74,7 +83,8 @@ export class SidePanel {
   }
   onGenerate() {
     if (this.prompt.trim()) {
-      this.generateClicked.emit(this.prompt.trim());
+      this.voiceError.set(null);
+      this.generateClicked.emit({ prompt: this.prompt.trim(), source: 'text' });
     }
   }
 
@@ -178,31 +188,99 @@ export class SidePanel {
       this.recognition.interimResults = true;
       this.recognition.continuous = false;
 
+      this.recognition.onstart = () => {
+        this.ngZone.run(() => this.recognizing.set(true));
+      };
+
       this.recognition.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0].transcript)
-          .join('');
-        this.prompt = transcript;
+        const results = Array.from(event.results) as any[];
+        const transcript = results
+          .map((result: any) => result[0]?.transcript || '')
+          .join(' ')
+          .trim();
+        const finalTranscript = results
+          .filter((result: any) => result.isFinal)
+          .map((result: any) => result[0]?.transcript || '')
+          .join(' ')
+          .trim();
+
+        this.ngZone.run(() => {
+          this.prompt = transcript;
+          if (finalTranscript) this.finalVoiceTranscript = finalTranscript;
+        });
       };
 
       this.recognition.onend = () => {
-        this.recognizing.set(true);
+        this.ngZone.run(() => {
+          this.recognizing.set(false);
+
+          if (this.voiceRecognitionFailed) return;
+
+          const command = this.finalVoiceTranscript.trim();
+          if (!command) {
+            this.voiceError.set('No se reconoció ninguna instrucción. Inténtalo nuevamente.');
+            return;
+          }
+
+          if (this.isLoadingChatbox()) {
+            this.voiceError.set('La IA ya está procesando otra instrucción.');
+            return;
+          }
+
+          this.prompt = command;
+          this.generateClicked.emit({ prompt: command, source: 'voice' });
+        });
+      };
+
+      this.recognition.onerror = (event: any) => {
+        this.ngZone.run(() => {
+          this.voiceRecognitionFailed = true;
+          this.recognizing.set(false);
+          this.voiceError.set(this.getVoiceErrorMessage(event?.error));
+        });
       };
     }
   }
+
   toggleVoiceInput() {
     if (!this.recognition) {
-      alert('Tu navegador no soporta reconocimiento de voz');
+      this.voiceError.set('Tu navegador no soporta reconocimiento de voz. Usa Chrome o escribe la instrucción.');
       return;
     }
 
+    if (this.isLoadingChatbox()) return;
+
     if (this.recognizing()) {
       this.recognition.stop();
-      this.recognizing.set(false);
     } else {
-      this.recognition.start();
-      this.recognizing.set(true);
+      this.finalVoiceTranscript = '';
+      this.voiceRecognitionFailed = false;
+      this.voiceError.set(null);
+      this.chatboxService.errorMessage.set(null);
+
+      try {
+        this.recognition.start();
+      } catch {
+        this.recognizing.set(false);
+        this.voiceError.set('No se pudo iniciar el micrófono. Inténtalo nuevamente.');
+      }
     }
+  }
+
+  private getVoiceErrorMessage(error: string | undefined): string {
+    if (error === 'not-allowed' || error === 'service-not-allowed') {
+      return 'El navegador no tiene permiso para usar el micrófono.';
+    }
+    if (error === 'no-speech') {
+      return 'No se detectó voz. Inténtalo nuevamente.';
+    }
+    if (error === 'audio-capture') {
+      return 'No se encontró un micrófono disponible.';
+    }
+    if (error === 'network') {
+      return 'El reconocimiento de voz no está disponible por un problema de conexión.';
+    }
+    return 'No se pudo reconocer la instrucción de voz.';
   }
   exportImage() {
     this.diagramService.exportToImage('diagrama.png');

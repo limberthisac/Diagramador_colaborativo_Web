@@ -233,6 +233,17 @@
 
 .sp-mic.is-recording { border-color: var(--danger); }
 
+.sp-mic:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.sp-voice-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--fg-2);
+}
+
 .sp-soft {
   width: 100%;
   padding: 0.625rem;

@@ -9,7 +9,11 @@ export class ChatbotService {
   public isLoading=signal<boolean>(false);
   public errorMessage = signal<string | null>(null);
 
-  generateDiagram(prompt: string) {
-    return this.http.post<any>(`${environment.endpoint_python}api/chatbot/`, { prompt });
+  generateDiagram(prompt: string, currentDiagram: any, source: 'text' | 'voice' = 'text') {
+    return this.http.post<any>(`${environment.endpoint_python}api/chatbot/`, {
+      prompt,
+      currentDiagram,
+      source
+    });
   }
 }
