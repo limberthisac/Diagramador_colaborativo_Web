@@ -165,13 +165,14 @@
       }
     </div>
 
-    <!-- Importación de XMI: elegir entre pisar el diagrama o sumarle lo importado -->
+    <!-- Importación: elegir entre reemplazar el diagrama o agregar el contenido -->
     @if (pendingImport(); as imported) {
       <div class="sp-modal-backdrop">
         <div class="sp-modal">
           <h3 class="sp-modal-title">Ya hay un diagrama en el lienzo</h3>
           <p class="sp-modal-text">
-            El archivo trae {{ imported.diagram.classes.length }} clases y
+            {{ imported.source === 'image' ? 'La imagen contiene' : 'El archivo contiene' }}
+            {{ imported.diagram.classes.length }} clases y
             {{ imported.diagram.relationships.length }} relaciones.
             ¿Qué hacemos con lo que ya está?
           </p>

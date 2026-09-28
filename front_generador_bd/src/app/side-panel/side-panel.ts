@@ -19,6 +19,10 @@ export interface DiagramGenerationRequest {
   source: 'text' | 'voice';
 }
 
+interface PendingDiagramImport extends XmiImportResult {
+  source: 'image' | 'xmi';
+}
+
 
 @Component({
   selector: 'app-side-panel',
@@ -510,14 +514,17 @@ export class SidePanel {
   }
 
   onImportImage(event: Event) {
-    this.umlImageService.loading.set(true);
     const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) {
+    const file = input.files?.[0];
+    // Permite volver a elegir la misma imagen después de cancelar.
+    input.value = '';
+
+    if (!file) {
       console.warn('⚠️ No se seleccionó ningún archivo.');
       return;
     }
 
-    const file = input.files[0];
+    this.umlImageService.loading.set(true);
     console.log(`📸 Imagen seleccionada: ${file.name} | Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB | Tipo: ${file.type}`);
     this.analyzingModel.set(true);
 
@@ -529,9 +536,22 @@ export class SidePanel {
         if (umlJson.error) {
            console.error('❌ El servidor devolvió un error interno:', umlJson.error);
            alert('Error al procesar la imagen: ' + umlJson.error);
+        } else if (!Array.isArray(umlJson.classes) || !Array.isArray(umlJson.relationships)) {
+           console.error('❌ La imagen produjo un modelo UML inválido:', umlJson);
+           alert('La imagen no produjo un diagrama UML válido.');
         } else {
            console.log('📊 JSON UML extraído correctamente:', umlJson);
-           this.diagramService.loadFromJson(umlJson);
+           const result: PendingDiagramImport = {
+             diagram: umlJson,
+             warnings: [],
+             source: 'image'
+           };
+
+           if (!this.diagramService.getGraph()?.getCells()?.length) {
+             this.applyImport(result, true);
+           } else {
+             this.pendingImport.set(result);
+           }
         }
 
         this.analyzingModel.set(false);
@@ -549,7 +569,7 @@ export class SidePanel {
   /* ===================== IMPORTACIÓN DE XMI (Enterprise Architect) ===================== */
 
   /** Diagrama leído y a la espera de que el usuario decida si pisa o suma. */
-  pendingImport = signal<XmiImportResult | null>(null);
+  pendingImport = signal<PendingDiagramImport | null>(null);
   /** Resumen de lo que entró, con los avisos de lo que no se pudo representar. */
   importReport = signal<{ classes: number; relationships: number; warnings: string[] } | null>(null);
   importing = signal<boolean>(false);
@@ -566,12 +586,16 @@ export class SidePanel {
     try {
       const text = await this.xmiImportService.readFile(file);
       const result = this.xmiImportService.parse(text);
+      const pendingResult: PendingDiagramImport = {
+        ...result,
+        source: 'xmi'
+      };
 
       // Si el lienzo está vacío no hay nada que pisar: se carga directo.
       if (!this.diagramService.getGraph()?.getCells()?.length) {
-        this.applyImport(result, true);
+        this.applyImport(pendingResult, true);
       } else {
-        this.pendingImport.set(result);
+        this.pendingImport.set(pendingResult);
       }
     } catch (err: any) {
       alert(`No se pudo importar el archivo:\n\n${err?.message ?? err}`);
@@ -581,7 +605,7 @@ export class SidePanel {
   }
 
   /** Confirma la importación pendiente. `replace` pisa; si no, suma. */
-  applyImport(result: XmiImportResult, replace: boolean) {
+  applyImport(result: PendingDiagramImport, replace: boolean) {
     this.diagramService.importDiagram(result.diagram, replace);
     this.pendingImport.set(null);
     this.importReport.set({
