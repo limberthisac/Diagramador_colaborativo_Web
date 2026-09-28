@@ -36,6 +36,7 @@ export class SidePanel {
   prompt: string = '';
   validationCollapsed = signal<boolean>(true);
   validationResult = signal<any>(null);
+  validationError = signal<string | null>(null);
   analyzingModel = signal<boolean>(false);
   roomId: string | null = null;
   copied = signal<boolean>(false);
@@ -74,8 +75,11 @@ export class SidePanel {
   onGenerate() {
     if (this.prompt.trim()) {
       this.generateClicked.emit(this.prompt.trim());
-      this.prompt = '';
     }
+  }
+
+  clearPrompt() {
+    this.prompt = '';
   }
   // para colapsar el panel
   toggleValidationPanel() {
@@ -83,19 +87,45 @@ export class SidePanel {
   }
 
   analyzeNow() {
+    this.validationError.set(null);
     this.analyzingModel.set(true);
     const umlJson = this.diagramService.exportToJson();
-    this.umlValidation.validateModel(umlJson);
+    const sent = this.umlValidation.validateModel(umlJson);
+    if (!sent) {
+      this.updateValidationError('No hay conexión con el servidor de análisis. Inténtalo nuevamente.');
+    }
   }
 
   // para recibir resultados desde el padre (diagram)
   updateValidationResult(result: any) {
+    if (result?.analysis?.error) {
+      this.updateValidationError(
+        typeof result.analysis.error === 'string'
+          ? result.analysis.error
+          : 'La IA no pudo analizar el modelo.'
+      );
+      return;
+    }
+
+    if (!Array.isArray(result?.analysis?.validas) || !Array.isArray(result?.analysis?.errores)) {
+      this.updateValidationError('La IA devolvió un resultado de validación que no se pudo interpretar.');
+      return;
+    }
+
     this.validationResult.set(result);
+    this.validationError.set(null);
     this.analyzingModel.set(false);
     if (this.validationCollapsed()) {
       this.validationCollapsed.set(false); // abrir solo si estaba cerrado
     }
-    //this.analyzingModel = false;
+  }
+
+  updateValidationError(message: string) {
+    this.validationError.set(message);
+    this.analyzingModel.set(false);
+    if (this.validationCollapsed()) {
+      this.validationCollapsed.set(false);
+    }
   }
   goHome() {
     this.diagramService.clearStorage(); // Limpia el diagrama guardado
@@ -501,6 +531,9 @@ export class SidePanel {
   }
   isLoadingChatbox(): boolean {
     return this.chatboxService.isLoading();
+  }
+  chatbotError(): string | null {
+    return this.chatboxService.errorMessage();
   }
   isLoadingGeneratefrontend(): boolean {
     return this.frontendGeneratorService.loading();

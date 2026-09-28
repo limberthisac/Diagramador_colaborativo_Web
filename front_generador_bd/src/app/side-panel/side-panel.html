@@ -350,7 +350,13 @@
         </button>
       </div>
 
-      <button class="sp-soft" (click)="onGenerate()">Generar con IA</button>
+      <button class="sp-soft" (click)="onGenerate()" [disabled]="isLoadingChatbox()">Generar con IA</button>
+
+      @if (chatbotError()) {
+        <div class="sp-inline-error" role="alert">
+          {{ chatbotError() }}
+        </div>
+      }
     </div>
 
     <!-- Sugerencias / validación -->
@@ -400,6 +406,10 @@
               </svg>
               Revisando modelo...
             </p>
+          } @else if (validationError()) {
+            <div class="sp-inline-error" role="alert">
+              {{ validationError() }}
+            </div>
           } @else if (!validationResult()) {
             <p class="italic text-fg-3 text-center py-2">No hay validaciones aún.</p>
           } @else {
