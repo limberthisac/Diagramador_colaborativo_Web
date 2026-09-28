@@ -1,6 +1,7 @@
 import re
 import requests
 import json
+import time
 from django.conf import settings
 
 from uuid import uuid4
@@ -10,12 +11,93 @@ from uuid import uuid4
 
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent"
 
+
+class GeminiServiceError(Exception):
+    """Error base controlado para las llamadas al proveedor de IA."""
+
+
+class GeminiUnavailableError(GeminiServiceError):
+    """El proveedor no esta disponible despues de los reintentos."""
+
+
+class GeminiTimeoutError(GeminiServiceError):
+    """El proveedor supero el tiempo maximo de espera."""
+
+
+class GeminiResponseError(GeminiServiceError):
+    """El proveedor rechazo la solicitud o devolvio contenido invalido."""
+
+
+def _request_gemini(data, *, read_timeout=60, max_attempts=3):
+    """Ejecuta una solicitud a Gemini con limites y reintentos controlados."""
+    api_key = getattr(settings, "GEMINI_API_KEY", None)
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key,
+    }
+    transient_statuses = {429, 500, 502, 503, 504}
+    timeout_attempts = min(max_attempts, 2)
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = requests.post(
+                GEMINI_API_URL,
+                headers=headers,
+                json=data,
+                timeout=(10, read_timeout),
+            )
+        except requests.Timeout as exc:
+            if attempt < timeout_attempts:
+                time.sleep(2 ** (attempt - 1))
+                continue
+            raise GeminiTimeoutError(
+                "Gemini tardo demasiado en responder"
+            ) from exc
+        except requests.ConnectionError as exc:
+            if attempt < max_attempts:
+                time.sleep(2 ** (attempt - 1))
+                continue
+            raise GeminiUnavailableError(
+                "No se pudo conectar con Gemini"
+            ) from exc
+        except requests.RequestException as exc:
+            raise GeminiResponseError(
+                "No se pudo completar la solicitud a Gemini"
+            ) from exc
+
+        if response.status_code in transient_statuses:
+            if attempt < max_attempts:
+                time.sleep(2 ** (attempt - 1))
+                continue
+            raise GeminiUnavailableError(
+                f"Gemini no esta disponible (estado {response.status_code})"
+            )
+
+        if response.status_code >= 400:
+            raise GeminiResponseError(
+                f"Gemini rechazo la solicitud (estado {response.status_code})"
+            )
+
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise GeminiResponseError(
+                "Gemini devolvio una respuesta que no es JSON"
+            ) from exc
+
+    raise GeminiUnavailableError("No se pudo obtener respuesta de Gemini")
+
+
+def _extract_text(result):
+    try:
+        return result["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise GeminiResponseError(
+            "Gemini no devolvio contenido utilizable"
+        ) from exc
+
+
 def call_gemini(prompt: str):
-    GEMINI_API_KEY = getattr(settings, "GEMINI_API_KEY", None)
-
-    headers = {"Content-Type": "application/json"}
-    params = {"key": GEMINI_API_KEY}
-
     # Detectar si es una solicitud de eliminación
     delete_keywords = ["eliminar", "elimina", "borra", "borrar",
                        "quitar", "quita", "remover", "remueve",
@@ -217,24 +299,11 @@ Prompt del usuario:
         ]
     }
 
-    response = requests.post(
-        GEMINI_API_URL, headers=headers, params=params, json=data)
-    response.raise_for_status()
-    result = response.json()
-
-    try:
-        text_output = result['candidates'][0]['content']['parts'][0]['text']
-        return text_output
-    except (KeyError, IndexError):
-        return '{"error": "No se pudo parsear la respuesta de Gemini"}'
+    result = _request_gemini(data)
+    return _extract_text(result)
 
 
 def call_gemini_analysis(prompt: str):
-    GEMINI_API_KEY = getattr(settings, "GEMINI_API_KEY", None)
-
-    headers = {"Content-Type": "application/json"}
-    params = {"key": GEMINI_API_KEY}
-
     data = {
         "contents": [
             {
@@ -270,16 +339,8 @@ Prompt:
         ]
     }
 
-    response = requests.post(
-        GEMINI_API_URL, headers=headers, params=params, json=data)
-    response.raise_for_status()
-    result = response.json()
-
-    try:
-        text_output = result["candidates"][0]["content"]["parts"][0]["text"]
-        return text_output
-    except (KeyError, IndexError):
-        return '{"error": "No se pudo parsear la respuesta de Gemini"}'
+    result = _request_gemini(data)
+    return _extract_text(result)
 
 
 # ===============================================================
@@ -295,13 +356,7 @@ def call_gemini_from_image(image_base64: str, mime_type: str = "image/png"):
     - Relaciones clasificadas visualmente (composition, aggregation, generalization, association)
     """
 
-    GEMINI_API_KEY = getattr(settings, "GEMINI_API_KEY", None)
-  
   #GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-    GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent"
-
-    headers = {"Content-Type": "application/json"}
-    params = {"key": GEMINI_API_KEY}
 
     # ===============================================================
     # 📘 Prompt mejorado: primero descripción visual, luego JSON UML
@@ -416,23 +471,19 @@ NO escribas texto fuera del JSON.
         ]
     }
 
+    result = _request_gemini(data, read_timeout=120)
+    text_output = _extract_text(result)
+    text_output = re.sub(r"^```json\s*|\s*```$", "",
+                         text_output.strip(), flags=re.MULTILINE)
     try:
-        response = requests.post(
-            GEMINI_API_URL, headers=headers, params=params, json=data)
-        response.raise_for_status()
-        result = response.json()
-
-        text_output = result["candidates"][0]["content"]["parts"][0]["text"]
-        text_output = re.sub(r"^```json\s*|\s*```$", "",
-                             text_output.strip(), flags=re.MULTILINE)
         parsed = json.loads(text_output)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise GeminiResponseError(
+            "Gemini devolvio una estructura UML invalida"
+        ) from exc
 
-        # Postprocesar relaciones según reglas determinísticas
-        uml_json = _map_edges_to_relationships(parsed)
-        return uml_json
-
-    except Exception as e:
-        return {"error": str(e)}
+    # Postprocesar relaciones segun reglas deterministicas
+    return _map_edges_to_relationships(parsed)
 
 # ===============================================================
 # 🔸 Clasificar conectores visuales → tipo UML

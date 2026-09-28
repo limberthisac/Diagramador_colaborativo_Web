@@ -32,6 +32,10 @@ export class UmlValidationService {
           this.clearResponseTimeout();
           this.awaitingResponse = false;
           onResult(data);
+        } else if (data.action === 'validation_error') {
+          this.failPendingValidation(
+            data.message || 'No se pudo analizar el modelo.'
+          );
         }
       } catch (e) {
         console.error('Error parseando mensaje de validación', e);
@@ -65,7 +69,7 @@ export class UmlValidationService {
       this.clearResponseTimeout();
       this.responseTimeout = setTimeout(() => {
         this.failPendingValidation('La IA tardó demasiado en analizar el modelo. Inténtalo nuevamente.');
-      }, 90000);
+      }, 150000);
       return true;
     } catch (error) {
       console.error('[UML Validation] No se pudo enviar la solicitud', error);

@@ -12,7 +12,13 @@ from rest_framework.parsers import MultiPartParser, FormParser
 import base64
 from io import BytesIO
 from PIL import Image
-from .services.services_gemini import call_gemini, call_gemini_from_image
+from .services.services_gemini import (
+    GeminiResponseError,
+    GeminiTimeoutError,
+    GeminiUnavailableError,
+    call_gemini,
+    call_gemini_from_image,
+)
 # from .services.services_groq import call_groq, call_groq_from_image
 
 
@@ -21,13 +27,33 @@ from .services.flutter_generator import FlutterCRUDGenerator
 from .utils.zip_utils import compress_folder_to_zip
 
 
+def _gemini_error_response(error):
+    if isinstance(error, GeminiTimeoutError):
+        return Response(
+            {"error": "La IA tardó demasiado en responder. Inténtalo nuevamente."},
+            status=status.HTTP_504_GATEWAY_TIMEOUT,
+        )
+    if isinstance(error, GeminiUnavailableError):
+        return Response(
+            {"error": "El servicio de IA está temporalmente ocupado. Inténtalo nuevamente."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    return Response(
+        {"error": "La IA devolvió una respuesta inválida."},
+        status=status.HTTP_502_BAD_GATEWAY,
+    )
+
+
 class GenerateUMLView(APIView):
     def post(self, request):
         prompt = request.data.get("prompt")
         if not prompt:
             return Response({"error": "El campo 'prompt' es requerido"}, status=status.HTTP_400_BAD_REQUEST)
 
-        output = call_gemini(prompt)
+        try:
+            output = call_gemini(prompt)
+        except (GeminiTimeoutError, GeminiUnavailableError, GeminiResponseError) as error:
+            return _gemini_error_response(error)
         # output = call_groq(prompt)
 
         # 🧹 Limpiar bloque de código Markdown si viene envuelto en ```json ... ```
@@ -37,12 +63,10 @@ class GenerateUMLView(APIView):
 
         try:
             parsed_json = json.loads(output)
-        except Exception as e:
+        except (TypeError, json.JSONDecodeError):
             return Response({
-                "error": "Gemini devolvió un formato inválido",
-                "raw": output,
-                "exception": str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                "error": "La IA devolvió una respuesta que no se pudo interpretar."
+            }, status=status.HTTP_502_BAD_GATEWAY)
 
         return Response(parsed_json, status=status.HTTP_200_OK)
 
@@ -117,9 +141,12 @@ def analyze_uml_image(request):
         return Response({"error": f"Error procesando imagen: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
     # Llamar al servicio Gemini
-    result = call_gemini_from_image(
-        image_base64, mime_type=mime_type
-    )
+    try:
+        result = call_gemini_from_image(
+            image_base64, mime_type=mime_type
+        )
+    except (GeminiTimeoutError, GeminiUnavailableError, GeminiResponseError) as error:
+        return _gemini_error_response(error)
     # result = call_groq_from_image(image_base64, mime_type=mime_type)
 
     # Intentar parsear el resultado JSON

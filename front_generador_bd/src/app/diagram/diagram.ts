@@ -116,7 +116,7 @@ export class Diagram implements AfterViewInit {
     this.chatbot.errorMessage.set(null);
     this.chatbot.isLoading.set(true);
     this.chatbot.generateDiagram(prompt).pipe(
-      timeout(90000),
+      timeout(150000),
       finalize(() => this.chatbot.isLoading.set(false))
     ).subscribe({
       next: (json) => {

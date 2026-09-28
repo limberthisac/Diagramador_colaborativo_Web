@@ -1,6 +1,12 @@
 import json
+from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from uml_api.services.services_gemini import call_gemini_analysis
+from uml_api.services.services_gemini import (
+    GeminiResponseError,
+    GeminiTimeoutError,
+    GeminiUnavailableError,
+    call_gemini_analysis,
+)
 # from uml_api.services.services_groq import call_groq_analysis
 import re
 class CanvasConsumer(AsyncWebsocketConsumer):
@@ -113,8 +119,27 @@ JSON UML:
 {json.dumps(uml_json, indent=2)}
 """
 
-            # Llamar a Gemini
-            raw_output = call_gemini_analysis(prompt)
+            # La llamada HTTP es sincrona; se ejecuta fuera del event loop.
+            try:
+                raw_output = await sync_to_async(
+                    call_gemini_analysis,
+                    thread_sensitive=False,
+                )(prompt)
+            except GeminiTimeoutError:
+                await self._send_validation_error(
+                    "La IA tardó demasiado en analizar el modelo. Inténtalo nuevamente."
+                )
+                return
+            except GeminiUnavailableError:
+                await self._send_validation_error(
+                    "El servicio de IA está temporalmente ocupado. Inténtalo nuevamente."
+                )
+                return
+            except GeminiResponseError:
+                await self._send_validation_error(
+                    "La IA devolvió una respuesta de validación inválida."
+                )
+                return
             # raw_output = call_groq_analysis(prompt)
 
             # 🧹 limpiar markdown (```json ... ```)
@@ -131,3 +156,9 @@ JSON UML:
                 "action": "validation_result",
                 "analysis": analysis
             }, ensure_ascii=False))
+
+    async def _send_validation_error(self, message):
+        await self.send(text_data=json.dumps({
+            "action": "validation_error",
+            "message": message,
+        }, ensure_ascii=False))

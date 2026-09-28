@@ -15,6 +15,8 @@ import os
 import environ
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
 # Quick-start development settings - unsuitable for production
@@ -24,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-88z8b!fhxkly)-m_(ho9575ih1u$)tl@ta5ddar)%w9^5hl_f1'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = ["*"]
 
@@ -47,9 +49,6 @@ INSTALLED_APPS = [
 ]
 ASGI_APPLICATION = "diagramador_uml.asgi.application"
 
-
-env = environ.Env()
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 GEMINI_API_KEY = env("GEMINI_API_KEY")
 #GROQ_API_KEY = env("GROQ_API_KEY", default=None)

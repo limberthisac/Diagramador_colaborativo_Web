@@ -34,9 +34,8 @@ venv.bak/
 db.sqlite3
 db.sqlite3-journal
 
-# Migraciones (opcional: puedes versionarlas si quieres)
-*/migrations/*
-!*/migrations/__init__.py
+# Las migraciones se versionan para que cada despliegue pueda reproducir
+# exactamente el esquema de la base de datos.
 
 # Archivos de entorno
 .env

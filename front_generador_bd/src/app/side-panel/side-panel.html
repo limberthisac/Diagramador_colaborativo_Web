@@ -337,6 +337,12 @@
         <span class="text-xl">🤖</span> Generar modelo
       </h4>
 
+      @if (chatbotError()) {
+        <div class="sp-inline-error" role="alert">
+          {{ chatbotError() }}
+        </div>
+      }
+
       <div class="flex space-x-2">
         <textarea [(ngModel)]="prompt" class="sp-textarea" placeholder="Describe tu modelo aquí..."
           rows="3"></textarea>
@@ -352,11 +358,6 @@
 
       <button class="sp-soft" (click)="onGenerate()" [disabled]="isLoadingChatbox()">Generar con IA</button>
 
-      @if (chatbotError()) {
-        <div class="sp-inline-error" role="alert">
-          {{ chatbotError() }}
-        </div>
-      }
     </div>
 
     <!-- Sugerencias / validación -->
