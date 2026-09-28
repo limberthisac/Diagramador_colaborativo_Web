@@ -84,7 +84,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:4200",
     "http://angular-app:4000",
     # "https://diagramador-uml.netlify.app",
-    "https://colaborativodiagramadorweb.netlify.app"
+    # "https://colaborativodiagramadorweb.netlify.app",
+    "https://diagramadorcolaborativo.netlify.app"
 ]
 
 
