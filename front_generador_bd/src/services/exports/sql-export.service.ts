@@ -5,18 +5,29 @@ export class SqlExportService {
 
   private typeMap: Record<string, string> = {
     'UUID': 'UUID',
+    'uuid': 'UUID',
     'String': 'VARCHAR(255)',
+    'string': 'VARCHAR(255)',
     'Text': 'TEXT',
+    'text': 'TEXT',
     'Integer': 'INT',
+    'integer': 'INT',
     'Int': 'INT',
     'int': 'INT',
     'Long': 'BIGINT',
+    'long': 'BIGINT',
     'Boolean': 'BOOLEAN',
+    'boolean': 'BOOLEAN',
     'Float': 'FLOAT',
+    'float': 'FLOAT',
     'Double': 'DOUBLE PRECISION',
+    'double': 'DOUBLE PRECISION',
     'Decimal': 'DECIMAL(15,2)',
+    'decimal': 'DECIMAL(15,2)',
     'Date': 'DATE',
-    'DateTime': 'TIMESTAMP'
+    'date': 'DATE',
+    'DateTime': 'TIMESTAMP',
+    'datetime': 'TIMESTAMP'
   };
 
   private invalidPkTypes = new Set(['TEXT', 'FLOAT', 'DOUBLE PRECISION', 'DECIMAL(15,2)', 'BOOLEAN']);

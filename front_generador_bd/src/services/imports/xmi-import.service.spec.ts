@@ -17,6 +17,73 @@ describe('XmiImportService', () => {
     return cls;
   };
 
+  const ASSOCIATION_CLASS_CHAIN_XMI = `<?xml version="1.0"?>
+    <xmi:XMI xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmlns:uml="http://schema.omg.org/spec/UML/2.1">
+      <uml:Model xmi:type="uml:Model" name="EA_Model">
+        <packagedElement xmi:type="uml:Package" xmi:id="pkg" name="Ventas">
+          <packagedElement xmi:type="uml:Class" xmi:id="venta" name="Venta">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="venta_id" name="id"><type xmi:idref="EAJava_int"/></ownedAttribute>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="producto" name="Producto"/>
+          <packagedElement xmi:type="uml:AssociationClass" xmi:id="detalle" name="Detalle">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="cantidad" name="cantidad"><type xmi:idref="EAJava_int"/></ownedAttribute>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="devolucion" name="Devolucion"/>
+          <packagedElement xmi:type="uml:AssociationClass" xmi:id="detalle_devolucion" name="DetalleDevolucion">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="cantidad_devuelta" name="cantidad_devuelta"><type xmi:idref="EAJava_int"/></ownedAttribute>
+          </packagedElement>
+        </packagedElement>
+      </uml:Model>
+      <xmi:Extension extender="Enterprise Architect">
+        <connectors>
+          <connector xmi:idref="venta_producto">
+            <source xmi:idref="venta"><type multiplicity="0..*" aggregation="none"/></source>
+            <target xmi:idref="producto"><type multiplicity="1..*" aggregation="none"/></target>
+            <properties ea_type="Association" subtype="Class"/>
+            <extendedProperties associationclass="detalle"/>
+          </connector>
+          <connector xmi:idref="detalle_devolucion_rel">
+            <source xmi:idref="detalle"><type multiplicity="1..*" aggregation="none"/></source>
+            <target xmi:idref="devolucion"><type multiplicity="1..*" aggregation="none"/></target>
+            <properties ea_type="Association" subtype="Class"/>
+            <extendedProperties associationclass="detalle_devolucion"/>
+          </connector>
+        </connectors>
+      </xmi:Extension>
+      <primitivetypes>
+        <packagedElement xmi:type="uml:PrimitiveType" xmi:id="EAJava_int" name="int"/>
+      </primitivetypes>
+    </xmi:XMI>`;
+
+  it('conserva relaciones encadenadas entre clases de asociación', () => {
+    const { diagram } = service.parse(ASSOCIATION_CLASS_CHAIN_XMI);
+    const venta = claseDe(diagram, 'Venta');
+    const producto = claseDe(diagram, 'Producto');
+    const detalle = claseDe(diagram, 'Detalle');
+    const devolucion = claseDe(diagram, 'Devolucion');
+    const detalleDevolucion = claseDe(diagram, 'DetalleDevolucion');
+
+    expect(venta.attributes).toEqual([{ name: 'id', type: 'int' }]);
+    expect(detalle.attributes).toEqual([{ name: 'cantidad', type: 'int' }]);
+    expect(detalleDevolucion.attributes).toEqual([{ name: 'cantidad_devuelta', type: 'int' }]);
+
+    const ventaProducto = diagram.relationships.find(
+      r => r.type === 'association' && r.sourceId === venta.id && r.targetId === producto.id
+    )!;
+    expect(ventaProducto.labels).toEqual(['0..*', '1..*']);
+
+    const detalleDevolucionRel = diagram.relationships.find(
+      r => r.type === 'association' && r.sourceId === detalle.id && r.targetId === devolucion.id
+    )!;
+    expect(detalleDevolucionRel).toBeDefined();
+    expect(detalleDevolucionRel.labels).toEqual(['1..*', '1..*']);
+
+    const anchors = diagram.relationships.filter(r => r.type === 'associationClass');
+    expect(anchors.length).toBe(2);
+    expect(anchors.some(r => r.sourceId === ventaProducto.id && r.targetId === detalle.id)).toBeTrue();
+    expect(anchors.some(r => r.sourceId === detalleDevolucionRel.id && r.targetId === detalleDevolucion.id)).toBeTrue();
+  });
+
   describe('sobre el diagrama "empresa" exportado de Enterprise Architect', () => {
 
     it('importa las nueve clases, incluida la de asociación', () => {
@@ -40,17 +107,17 @@ describe('XmiImportService', () => {
       // que no es un tipo de dato. El valor que eligió el usuario solo está en
       // el bloque de extensión: float, float y double.
       expect(claseDe(diagram, 'Pago').attributes).toEqual([
-        { name: 'id', type: 'Int' },
-        { name: 'monto', type: 'Float' }
+        { name: 'id', type: 'int' },
+        { name: 'monto', type: 'float' }
       ]);
       expect(claseDe(diagram, 'Producto').attributes).toEqual([
-        { name: 'id', type: 'Int' },
-        { name: 'descripcion', type: 'String' },
-        { name: 'precio', type: 'Float' }
+        { name: 'id', type: 'int' },
+        { name: 'descripcion', type: 'string' },
+        { name: 'precio', type: 'float' }
       ]);
       expect(claseDe(diagram, 'Item').attributes).toEqual([
-        { name: 'cantidad', type: 'Int' },
-        { name: 'descuento', type: 'Double' }
+        { name: 'cantidad', type: 'int' },
+        { name: 'descuento', type: 'double' }
       ]);
     });
 
@@ -111,8 +178,8 @@ describe('XmiImportService', () => {
       const personaTelefono = diagram.relationships.find(
         r => r.type === 'association' && r.sourceId === persona.id
       )!;
-      // `0..*` se abrevia a `*`, que es como se tipea en el lienzo.
-      expect(personaTelefono.labels).toEqual(['1', '*']);
+      // Se conserva la notación explícita del archivo de Enterprise Architect.
+      expect(personaTelefono.labels).toEqual(['1', '0..*']);
     });
 
     it('engancha la clase de asociación al conector N:M', () => {

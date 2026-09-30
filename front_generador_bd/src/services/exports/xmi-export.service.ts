@@ -190,7 +190,7 @@ export class XmiExportService {
       cls.attributes.forEach((attr: any, index: number) => {
         const attrId = `${cls.id}_attr_${index}`;
         xml += `        <ownedAttribute xmi:type="uml:Property" xmi:id="${attrId}" name="${this.esc(attr.name)}" visibility="private">\n`;
-        xml += `          <type xmi:type="uml:PrimitiveType" href="http://schema.omg.org/spec/UML/2.1/uml.xml#${(attr.type || 'String').toLowerCase()}"/>\n`;
+        xml += `          <type xmi:type="uml:PrimitiveType" href="http://schema.omg.org/spec/UML/2.1/uml.xml#${this.esc(attr.type || 'String')}"/>\n`;
         xml += `        </ownedAttribute>\n`;
       });
     }
@@ -201,7 +201,7 @@ export class XmiExportService {
         xml += `        <ownedOperation xmi:type="uml:Operation" xmi:id="${methodId}" name="${this.esc(method.name)}" visibility="public">\n`;
         if (method.returnType) {
           xml += `          <ownedParameter xmi:type="uml:Parameter" xmi:id="${methodId}_return" direction="return">\n`;
-          xml += `            <type xmi:type="uml:PrimitiveType" href="http://schema.omg.org/spec/UML/2.1/uml.xml#${method.returnType.toLowerCase()}"/>\n`;
+          xml += `            <type xmi:type="uml:PrimitiveType" href="http://schema.omg.org/spec/UML/2.1/uml.xml#${this.esc(method.returnType)}"/>\n`;
           xml += `          </ownedParameter>\n`;
         }
         xml += `        </ownedOperation>\n`;

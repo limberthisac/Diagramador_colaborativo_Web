@@ -140,6 +140,12 @@ export class XmiImportService {
     };
 
     const classes: UmlClassDTO[] = [];
+    // Una clase de asociación tiene dos identidades en nuestro modelo: la caja
+    // que contiene sus atributos y el conector al que está anclada. Este índice
+    // resuelve siempre una referencia UML usada como extremo hacia la caja. Es
+    // imprescindible cuando una clase de asociación participa, a su vez, en
+    // otra asociación (por ejemplo: Detalle -- Devolución).
+    const classIdByOriginal = new Map<string, string>();
 
     let unplaced = 0;
     const placeOf = (originalId: string | null, name: string): Geometry => {
@@ -168,7 +174,10 @@ export class XmiImportService {
 
     // ====== CLASES ======
     for (const el of classEls) {
-      addClass(el, mapId(this.xmiAttr(el, 'id')));
+      const originalId = this.xmiAttr(el, 'id');
+      const classId = mapId(originalId);
+      if (originalId) classIdByOriginal.set(originalId, classId);
+      addClass(el, classId);
     }
 
     // ====== CLASES DE ASOCIACIÓN ======
@@ -183,17 +192,25 @@ export class XmiImportService {
       // La clase necesita un id propio porque el del archivo puede quedar
       // tomado por el conector.
       const classId = uuid();
-      if (originalId) assocClassIdByOriginal.set(originalId, classId);
+      if (originalId) {
+        assocClassIdByOriginal.set(originalId, classId);
+        classIdByOriginal.set(originalId, classId);
+      }
       addClass(el, classId);
     }
+
+    const resolveClassId = (original: string | null): string => {
+      if (!original) return uuid();
+      return classIdByOriginal.get(original) ?? mapId(original);
+    };
 
     // ====== RELACIONES ======
     const connectors = this.deep(doc, 'connector');
     const relationships = connectors.length > 0
-      ? this.readFromConnectors(connectors, mapId, assocClassIdByOriginal, warnings)
+      ? this.readFromConnectors(connectors, mapId, resolveClassId, assocClassIdByOriginal, warnings)
       : this.readFromModel(
           { classEls, assocClassEls, assocEls, depEls },
-          propertyById, mapId, assocClassIdByOriginal, warnings
+          propertyById, mapId, resolveClassId, assocClassIdByOriginal, warnings
         );
 
     // Una relación que apunte a una clase que no se importó rompe el lienzo al
@@ -267,6 +284,7 @@ export class XmiImportService {
   private readFromConnectors(
     connectors: Element[],
     mapId: (id: string | null) => string,
+    resolveClassId: (id: string | null) => string,
     assocClassIdByOriginal: Map<string, string>,
     warnings: string[]
   ): UmlRelationshipDTO[] {
@@ -302,8 +320,8 @@ export class XmiImportService {
         relationships.push({
           id: connectorId,
           type: 'generalization',
-          sourceId: mapId(sourceRef),
-          targetId: mapId(targetRef),
+          sourceId: resolveClassId(sourceRef),
+          targetId: resolveClassId(targetRef),
           labels: []
         });
         continue;
@@ -313,8 +331,8 @@ export class XmiImportService {
         relationships.push({
           id: connectorId,
           type: 'dependency',
-          sourceId: mapId(sourceRef),
-          targetId: mapId(targetRef),
+          sourceId: resolveClassId(sourceRef),
+          targetId: resolveClassId(targetRef),
           labels: []
         });
         continue;
@@ -355,8 +373,8 @@ export class XmiImportService {
       relationships.push({
         id: connectorId,
         type,
-        sourceId: mapId(sourceId),
-        targetId: mapId(targetId),
+        sourceId: resolveClassId(sourceId),
+        targetId: resolveClassId(targetId),
         labels: [sourceMult, targetMult]
       });
 
@@ -399,6 +417,7 @@ export class XmiImportService {
     els: { classEls: Element[]; assocClassEls: Element[]; assocEls: Element[]; depEls: Element[] },
     propertyById: Map<string, Element>,
     mapId: (id: string | null) => string,
+    resolveClassId: (id: string | null) => string,
     assocClassIdByOriginal: Map<string, string>,
     warnings: string[]
   ): UmlRelationshipDTO[] {
@@ -417,8 +436,8 @@ export class XmiImportService {
         relationships.push({
           id: mapId(this.xmiAttr(gen, 'id')),
           type: 'generalization',
-          sourceId: mapId(childId),
-          targetId: mapId(parent),
+          sourceId: resolveClassId(childId),
+          targetId: resolveClassId(parent),
           // Ver la nota del mismo caso en `readFromConnectors`: sin esto el
           // lienzo le pone multiplicidades por defecto a la herencia.
           labels: []
@@ -427,13 +446,13 @@ export class XmiImportService {
     }
 
     for (const el of els.assocEls) {
-      const rel = this.readAssociation(el, propertyById, mapId);
+      const rel = this.readAssociation(el, propertyById, mapId, resolveClassId);
       if (rel) relationships.push(rel);
     }
 
     for (const el of els.assocClassEls) {
       const originalId = this.xmiAttr(el, 'id');
-      const rel = this.readAssociation(el, propertyById, mapId);
+      const rel = this.readAssociation(el, propertyById, mapId, resolveClassId);
       if (!rel) {
         warnings.push(`La clase de asociación "${this.plainAttr(el, 'name')}" no tenía dos extremos resolubles; se omitió el conector.`);
         continue;
@@ -461,8 +480,8 @@ export class XmiImportService {
       relationships.push({
         id: mapId(this.xmiAttr(el, 'id')),
         type: 'dependency',
-        sourceId: mapId(client),
-        targetId: mapId(supplier),
+        sourceId: resolveClassId(client),
+        targetId: resolveClassId(supplier),
         labels: []
       });
     }
@@ -479,7 +498,8 @@ export class XmiImportService {
   private readAssociation(
     el: Element,
     propertyById: Map<string, Element>,
-    mapId: (id: string | null) => string
+    mapId: (id: string | null) => string,
+    resolveClassId: (id: string | null) => string
   ): UmlRelationshipDTO | null {
     let ends = this.kids(el, 'ownedEnd');
 
@@ -532,8 +552,8 @@ export class XmiImportService {
     return {
       id: mapId(this.xmiAttr(el, 'id')),
       type,
-      sourceId: mapId(sourceId),
-      targetId: mapId(targetId),
+      sourceId: resolveClassId(sourceId),
+      targetId: resolveClassId(targetId),
       labels: [this.readMultiplicity(sourceEnd), this.readMultiplicity(targetEnd)]
     };
   }
@@ -562,10 +582,9 @@ export class XmiImportService {
     return value.trim() === '-1' ? '*' : value.trim();
   }
 
-  /** `0..*` se escribe `*` en el lienzo, que es como lo tipea la gente. */
+  /** Conserva la notación del archivo para que el diagrama importado sea fiel. */
   private normalizeMultiplicity(value: string): string {
-    const clean = value.trim();
-    return clean === '0..*' ? '*' : clean;
+    return value.trim();
   }
 
   private valueOf(end: Element, localName: string): string | null {
@@ -599,7 +618,7 @@ export class XmiImportService {
         // `float` aparece como `UnlimitedNatural` y se perdería la precisión.
         const ownId = this.xmiAttr(attr, 'id');
         const declared = ownId ? eaTypeByAttrId.get(ownId) : undefined;
-        const type = declared ? this.capitalize(declared) : this.resolveType(attr, nameById);
+        const type = declared?.trim() || this.resolveType(attr, nameById);
 
         if (!type) {
           warnings.push(`El atributo "${name}" no declaraba tipo; se asumió String.`);
@@ -634,9 +653,8 @@ export class XmiImportService {
    * declarado en el propio archivo (`EAJava_int` → `name="int"`), o como
    * atributo suelto.
    *
-   * El nombre sale capitalizado porque los generadores de SQL y de backend
-   * traducen los tipos con una tabla que usa `String`, `Integer`, `Date`: un
-   * `string` en minúscula no se encontraría y caería en el tipo por defecto.
+   * Se conserva exactamente el nombre declarado. El lienzo es también un
+   * editor UML, por lo que `int` no debe cambiar visualmente a `Int`.
    */
   private resolveType(owner: Element, nameById: Map<string, string>): string | null {
     const typeEl = this.kids(owner, 'type')[0];
@@ -645,19 +663,19 @@ export class XmiImportService {
       const href = this.plainAttr(typeEl, 'href');
       if (href) {
         const fragment = href.split('#').pop();
-        if (fragment) return this.capitalize(fragment);
+        if (fragment) return fragment;
       }
       const ref = this.xmiAttr(typeEl, 'idref') ?? this.plainAttr(typeEl, 'idref');
       if (ref) {
         const name = nameById.get(ref);
-        return name ? this.capitalize(name) : null;
+        return name ?? null;
       }
     }
 
     const direct = this.plainAttr(owner, 'type');
     if (direct) {
       const name = nameById.get(direct);
-      return name ? this.capitalize(name) : null;
+      return name ?? null;
     }
 
     return null;
@@ -759,7 +777,4 @@ export class XmiImportService {
     return colon === -1 ? name : name.slice(colon + 1);
   }
 
-  private capitalize(value: string): string {
-    return value.charAt(0).toUpperCase() + value.slice(1);
-  }
 }
