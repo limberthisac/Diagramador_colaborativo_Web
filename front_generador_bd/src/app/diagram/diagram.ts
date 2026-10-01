@@ -253,10 +253,9 @@ export class Diagram implements AfterViewInit {
               { name: 'id', type: 'int' },
               { name: 'nombre', type: 'string' }
             ],
-            methods: [
-              { name: 'crear' },
-              { name: 'eliminar' }
-            ]
+            // Las clases creadas manualmente comienzan sin métodos.
+            // El usuario puede agregarlos después mediante la edición en línea.
+            methods: []
           };
           
           // Usar el servicio para crear la clase UML
@@ -273,10 +272,9 @@ export class Diagram implements AfterViewInit {
               { name: 'id', type: 'int' },
               { name: 'nombre', type: 'string' }
             ],
-            methods: [
-              { name: 'crear' },
-              { name: 'eliminar' }
-            ]
+            // Mantener el mismo comportamiento si falla la forma JointJS:
+            // la clase de respaldo también inicia sin métodos.
+            methods: []
           };
           
           this.fallbackService.createFallbackElement(
