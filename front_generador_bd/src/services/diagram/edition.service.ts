@@ -11,7 +11,7 @@ export class EditionService {
   readonly MIN_W = 180;
   readonly NAME_H = 30;
   readonly MIN_ATTRS_H = 40;
-  readonly MIN_METHS_H = 20;
+  readonly MIN_METHS_H = 30;
   readonly PAD_V = 10;
   constructor(
     private exportService: DiagramExportService,
