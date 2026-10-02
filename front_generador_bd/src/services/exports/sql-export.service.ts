@@ -1,5 +1,14 @@
 import { Injectable } from '@angular/core';
 
+interface SqlKeyPart {
+  /** Nombre de la columna que se crea en la tabla intermedia. */
+  localName: string;
+  /** Tipo SQL de la columna local. */
+  type: string;
+  /** Nombre de la columna que se referencia en la tabla destino. */
+  referencedName: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SqlExportService {
 
@@ -141,27 +150,38 @@ export class SqlExportService {
         );
 
         const joinTable = joinClass ? joinClass.name : `${source.name}_${target.name}`;
-        const srcCol = `${source.name.toLowerCase()}_id`;
-        const trgCol = `${target.name.toLowerCase()}_id`;
-        const srcPk = this.getPrimaryKeyInfo(source, umlJson);
-        const trgPk = this.getPrimaryKeyInfo(target, umlJson);
+        // Una clase de asociación puede ser, a su vez, el extremo de otra
+        // relación N:M. En ese caso no tiene una PK simple: su tabla conserva
+        // las dos columnas que forman la PK del conector original.
+        const srcKey = this.getJoinKeyParts(source, umlJson, assocClassByLink);
+        const trgKey = this.getJoinKeyParts(target, umlJson, assocClassByLink);
+        const keyParts = [...srcKey, ...trgKey];
 
-        const cols: string[] = [
-          `  ${srcCol} ${srcPk.type} NOT NULL`,
-          `  ${trgCol} ${trgPk.type} NOT NULL`
-        ];
+        const cols: string[] = keyParts.map(
+          part => `  ${part.localName} ${part.type} NOT NULL`
+        );
 
         // Atributos propios de la relación (fecha, nota, cantidad…).
         for (const attr of joinClass?.attributes || []) {
           // Un atributo que choque con una de las dos claves foráneas daría una
           // columna duplicada y el CREATE TABLE fallaría.
-          if (attr.name === srcCol || attr.name === trgCol) continue;
+          if (keyParts.some(part => attr.name === part.localName)) continue;
           cols.push(`  ${attr.name} ${this.typeMap[attr.type] || 'VARCHAR(255)'}`);
         }
 
-        cols.push(`  PRIMARY KEY (${srcCol}, ${trgCol})`);
-        cols.push(`  CONSTRAINT fk_${joinTable}_${source.name.toLowerCase()} FOREIGN KEY (${srcCol}) REFERENCES ${source.name}(${srcPk.name}) ON DELETE CASCADE ON UPDATE CASCADE`);
-        cols.push(`  CONSTRAINT fk_${joinTable}_${target.name.toLowerCase()} FOREIGN KEY (${trgCol}) REFERENCES ${target.name}(${trgPk.name}) ON DELETE CASCADE ON UPDATE CASCADE`);
+        cols.push(`  PRIMARY KEY (${keyParts.map(part => part.localName).join(', ')})`);
+        cols.push(
+          `  CONSTRAINT fk_${joinTable}_${source.name.toLowerCase()} ` +
+          `FOREIGN KEY (${srcKey.map(part => part.localName).join(', ')}) ` +
+          `REFERENCES ${source.name}(${srcKey.map(part => part.referencedName).join(', ')}) ` +
+          `ON DELETE CASCADE ON UPDATE CASCADE`
+        );
+        cols.push(
+          `  CONSTRAINT fk_${joinTable}_${target.name.toLowerCase()} ` +
+          `FOREIGN KEY (${trgKey.map(part => part.localName).join(', ')}) ` +
+          `REFERENCES ${target.name}(${trgKey.map(part => part.referencedName).join(', ')}) ` +
+          `ON DELETE CASCADE ON UPDATE CASCADE`
+        );
 
         sql += `CREATE TABLE ${joinTable} (\n` + cols.join(',\n') + `\n);\n\n`;
         continue;
@@ -227,6 +247,57 @@ export class SqlExportService {
     }
 
     return sql.trim();
+  }
+
+  /**
+   * Devuelve las columnas que representan la clave de una clase dentro de una
+   * tabla intermedia.
+   *
+   * Para una clase normal hay una sola columna, por ejemplo `cliente_id` que
+   * referencia `Cliente(id)`. Para una clase de asociación que ya representa
+   * una tabla intermedia, devuelve sus dos columnas reales, por ejemplo
+   * `producto_id, venta_id` que referencia las mismas columnas de
+   * `DetalleVenta`.
+   */
+  private getJoinKeyParts(
+    cls: any,
+    umlJson: any,
+    assocClassByLink: Map<string, string>
+  ): SqlKeyPart[] {
+    const baseRel = (umlJson?.relationships || []).find(
+      (rel: any) => rel.type !== 'associationClass' && assocClassByLink.get(rel.id) === cls?.id
+    );
+
+    if (baseRel) {
+      const baseSource = umlJson.classes.find((c: any) => c.id === baseRel.sourceId);
+      const baseTarget = umlJson.classes.find((c: any) => c.id === baseRel.targetId);
+
+      if (baseSource && baseTarget) {
+        const sourcePk = this.getPrimaryKeyInfo(baseSource, umlJson);
+        const targetPk = this.getPrimaryKeyInfo(baseTarget, umlJson);
+        return [
+          {
+            localName: `${baseSource.name.toLowerCase()}_id`,
+            type: sourcePk.type,
+            // La tabla de asociación usa nombres basados en las clases, no
+            // necesariamente el nombre literal de la PK de cada clase.
+            referencedName: `${baseSource.name.toLowerCase()}_id`
+          },
+          {
+            localName: `${baseTarget.name.toLowerCase()}_id`,
+            type: targetPk.type,
+            referencedName: `${baseTarget.name.toLowerCase()}_id`
+          }
+        ];
+      }
+    }
+
+    const pk = this.getPrimaryKeyInfo(cls, umlJson);
+    return [{
+      localName: `${cls.name.toLowerCase()}_id`,
+      type: pk.type,
+      referencedName: pk.name
+    }];
   }
 
   /**
