@@ -625,7 +625,10 @@ export class DiagramService {
     // Una clase de asociación no tiene multiplicidades: describe los atributos de
     // una relación, no la relación misma. Las cardinalidades ya están en el
     // conector del que cuelga.
-    if (!DiagramService.isLinkAnchored(type)) {
+    // La herencia no tiene multiplicidades UML. Las etiquetas por defecto
+    // solo corresponden a relaciones estructurales (asociación, agregación
+    // y composición); una clase de asociación tampoco las usa.
+    if (!DiagramService.isLinkAnchored(type) && type !== 'generalization') {
       link.set('labels', [
         {
           position: { distance: 20, offset: -10 },
