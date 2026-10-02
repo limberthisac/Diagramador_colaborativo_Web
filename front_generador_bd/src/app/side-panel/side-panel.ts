@@ -559,7 +559,15 @@ export class SidePanel {
       },
       error: (err) => {
         console.error('❌ Error HTTP al analizar imagen UML:', err);
-        alert('Hubo un error de conexión con el servidor al subir la imagen.');
+        // El backend devuelve mensajes distintos para cuota/indisponibilidad
+        // de Gemini, timeout, imagen inválida, etc. No ocultarlos detrás de un
+        // mensaje genérico de conexión.
+        const serverMessage =
+          (typeof err?.error === 'string' ? err.error : err?.error?.error) ||
+          (err?.status === 0
+            ? 'No se pudo conectar con el servidor de importación.'
+            : `No se pudo analizar la imagen (HTTP ${err?.status || 'desconocido'}).`);
+        alert(serverMessage);
         this.analyzingModel.set(false);
         this.umlImageService.loading.set(false);
       }

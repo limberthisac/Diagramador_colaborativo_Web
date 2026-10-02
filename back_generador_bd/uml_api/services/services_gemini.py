@@ -2,9 +2,12 @@ import re
 import requests
 import json
 import time
+import logging
 from django.conf import settings
 
 from uuid import uuid4
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -32,6 +35,8 @@ class GeminiResponseError(GeminiServiceError):
 def _request_gemini(data, *, read_timeout=60, max_attempts=3):
     """Ejecuta una solicitud a Gemini con limites y reintentos controlados."""
     api_key = getattr(settings, "GEMINI_API_KEY", None)
+    if not api_key:
+        raise GeminiResponseError("GEMINI_API_KEY no está configurada en el servidor")
     headers = {
         "Content-Type": "application/json",
         "x-goog-api-key": api_key,
@@ -67,8 +72,18 @@ def _request_gemini(data, *, read_timeout=60, max_attempts=3):
             ) from exc
 
         if response.status_code in transient_statuses:
+            # El cuerpo suele indicar si se trata de cuota, saturación o una
+            # indisponibilidad temporal. Se registra sin exponer la API key.
+            logger.warning(
+                "Gemini respondió %s (intento %s/%s): %s",
+                response.status_code,
+                attempt,
+                max_attempts,
+                response.text[:500],
+            )
             if attempt < max_attempts:
-                time.sleep(2 ** (attempt - 1))
+                # Dar un margen mayor al proveedor antes de volver a intentar.
+                time.sleep(2 ** attempt)
                 continue
             raise GeminiUnavailableError(
                 f"Gemini no esta disponible (estado {response.status_code})"
