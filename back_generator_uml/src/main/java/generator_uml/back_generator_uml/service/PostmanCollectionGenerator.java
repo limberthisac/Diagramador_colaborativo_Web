@@ -77,7 +77,7 @@ public class PostmanCollectionGenerator {
                         String targetEntity = NamingUtil.toJavaClass(targetName);
 
                         intermediateEntities.add(AssociationClassUtil.nombreIntermedia(
-                                sourceEntity, targetEntity, assocPorConector.get(rel.getId())));
+                                sourceEntity, targetEntity, assocPorConector.get(rel.getId()), rel));
                     }
                 }
             }
@@ -101,7 +101,9 @@ public class PostmanCollectionGenerator {
             // Detectar si tiene padre (herencia)
             final String[] parentClassNameHolder = {null};
             for (var rel : schema.getRelationships()) {
-                if ("generalization".equals(rel.getType()) && rel.getSourceId().equals(c.getId())) {
+                if ("generalization".equals(rel.getType())
+                        && rel.getSourceId().equals(c.getId())
+                        && !rel.getSourceId().equals(rel.getTargetId())) {
                     parentClassNameHolder[0] = schema.getClasses().stream()
                             .filter(pc -> pc.getId().equals(rel.getTargetId()))
                             .map(UmlClass::getName)
@@ -360,7 +362,9 @@ public class PostmanCollectionGenerator {
         String parentClass = null;
         if (schema.getRelationships() != null) {
             for (var rel : schema.getRelationships()) {
-                if ("generalization".equals(rel.getType()) && rel.getSourceId().equals(c.getId())) {
+                if ("generalization".equals(rel.getType())
+                        && rel.getSourceId().equals(c.getId())
+                        && !rel.getSourceId().equals(rel.getTargetId())) {
                     parentClass = schema.getClasses().stream()
                             .filter(pc -> pc.getId().equals(rel.getTargetId()))
                             .map(UmlClass::getName)
@@ -436,6 +440,13 @@ public class PostmanCollectionGenerator {
 
                 boolean sourceIsMany = sourceCard.contains("*");
                 boolean targetIsMany = targetCard.contains("*");
+                boolean recursive = rel.getSourceId().equals(rel.getTargetId());
+                String sourceRole = NamingUtil.roleField(
+                        rel.getLabels().size() > 2 ? rel.getLabels().get(2) : null,
+                        "parent");
+                String targetRole = NamingUtil.roleField(
+                        rel.getLabels().size() > 3 ? rel.getLabels().get(3) : null,
+                        "children");
 
                 if (c.getName().equals(sourceName) &&
                         ("association".equals(rel.getType()) ||
@@ -447,7 +458,7 @@ public class PostmanCollectionGenerator {
                     // entonces Source tiene ManyToOne → incluir solo el ID de la relación
                     if (sourceIsMany && !targetIsMany) {
                         String targetEntity = NamingUtil.toJavaClass(targetName);
-                        String fieldName = NamingUtil.toField(targetEntity) + "id";
+                        String fieldName = (recursive ? targetRole : NamingUtil.toField(targetEntity)) + "id";
 
                         UmlClass targetClass = schema.getClasses().stream()
                                 .filter(tc -> tc.getName().equals(targetName))
@@ -461,7 +472,7 @@ public class PostmanCollectionGenerator {
                     // Si source tiene cardinalidad 1 y target tiene 1 (OneToOne o Composition)
                     else if (!sourceIsMany && !targetIsMany) {
                         String targetEntity = NamingUtil.toJavaClass(targetName);
-                        String fieldName = NamingUtil.toField(targetEntity) + "id";
+                        String fieldName = (recursive ? targetRole : NamingUtil.toField(targetEntity)) + "id";
 
                         UmlClass targetClass = schema.getClasses().stream()
                                 .filter(tc -> tc.getName().equals(targetName))
@@ -488,7 +499,7 @@ public class PostmanCollectionGenerator {
                     if (targetIsMany && !sourceIsMany) {
                         // Target (este objeto) tiene ManyToOne hacia Source
                         String sourceEntity = NamingUtil.toJavaClass(sourceName);
-                        String fieldName = NamingUtil.toField(sourceEntity) + "id";
+                        String fieldName = (recursive ? sourceRole : NamingUtil.toField(sourceEntity)) + "id";
 
                         UmlClass sourceClass = schema.getClasses().stream()
                                 .filter(sc -> sc.getName().equals(sourceName))
@@ -520,6 +531,7 @@ public class PostmanCollectionGenerator {
         // Buscamos en el schema las relaciones ManyToMany que generan esta entidad intermedia
         
         final String[] entityNames = {null, null}; // [0] = first, [1] = second
+        final String[] recursiveFields = {null, null};
 
         // Si la entidad intermedia es una clase de asociación, hay que mandar además
         // sus atributos propios (cantidad, descuento...) en el cuerpo del POST.
@@ -565,11 +577,22 @@ public class PostmanCollectionGenerator {
 
                         UmlClass colgada = assocPorConector.get(rel.getId());
                         String candidateName = AssociationClassUtil.nombreIntermedia(
-                                sourceEntity, targetEntity, colgada);
+                                sourceEntity, targetEntity, colgada, rel);
 
                         if (candidateName.equals(intermediateEntityName)) {
                             entityNames[0] = firstEntity;
                             entityNames[1] = secondEntity;
+                            if (rel.getSourceId().equals(rel.getTargetId())) {
+                                recursiveFields[0] = NamingUtil.roleField(
+                                        rel.getLabels().size() > 2 ? rel.getLabels().get(2) : null,
+                                        "source");
+                                recursiveFields[1] = NamingUtil.roleField(
+                                        rel.getLabels().size() > 3 ? rel.getLabels().get(3) : null,
+                                        "target");
+                                if (recursiveFields[0].equals(recursiveFields[1])) {
+                                    recursiveFields[1] += "Target";
+                                }
+                            }
                             asociacion = colgada;
                             break;
                         }
@@ -580,8 +603,10 @@ public class PostmanCollectionGenerator {
 
         // Generar los campos de FK para las dos entidades
         if (entityNames[0] != null && entityNames[1] != null) {
-            String firstFieldName = NamingUtil.toField(entityNames[0]) + "id";
-            String secondFieldName = NamingUtil.toField(entityNames[1]) + "id";
+            String firstFieldName = (recursiveFields[0] != null
+                    ? recursiveFields[0] : NamingUtil.toField(entityNames[0])) + "id";
+            String secondFieldName = (recursiveFields[1] != null
+                    ? recursiveFields[1] : NamingUtil.toField(entityNames[1])) + "id";
             
             // Obtener el tipo de PK de cada entidad
             UmlClass firstClass = schema.getClasses().stream()

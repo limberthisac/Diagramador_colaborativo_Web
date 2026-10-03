@@ -7,6 +7,7 @@ export interface DiagramApi {
   // NUEVO: para colaboración
   createRelationship?(sourceId: string, targetId: string, remote?: boolean): any;
   createTypedRelationship?(sourceId: string, targetId: string, type: string, remote?: boolean): any;
+  layoutRecursiveLinksForElement?(elementId: string, remote?: boolean): void;
   getEdition?(): any;
   getPaper?(): any;
   loadFromJson(json: any, isStorageLoad?: boolean): void;

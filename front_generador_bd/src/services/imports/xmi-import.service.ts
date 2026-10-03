@@ -549,12 +549,22 @@ export class XmiImportService {
     const targetId = this.endTypeId(targetEnd);
     if (!sourceId || !targetId) return null;
 
+    const resolvedSourceId = resolveClassId(sourceId);
+    const resolvedTargetId = resolveClassId(targetId);
+    const labels = [this.readMultiplicity(sourceEnd), this.readMultiplicity(targetEnd)];
+    if (resolvedSourceId === resolvedTargetId) {
+      labels.push(
+        this.plainAttr(sourceEnd, 'name') || 'parent',
+        this.plainAttr(targetEnd, 'name') || 'children'
+      );
+    }
+
     return {
       id: mapId(this.xmiAttr(el, 'id')),
       type,
-      sourceId: resolveClassId(sourceId),
-      targetId: resolveClassId(targetId),
-      labels: [this.readMultiplicity(sourceEnd), this.readMultiplicity(targetEnd)]
+      sourceId: resolvedSourceId,
+      targetId: resolvedTargetId,
+      labels
     };
   }
 

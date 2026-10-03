@@ -1,6 +1,64 @@
 import { SqlExportService } from './sql-export.service';
 
 describe('SqlExportService', () => {
+  const employeeClass = {
+    id: 'employee',
+    name: 'Employee',
+    attributes: [{ name: 'id', type: 'int' }],
+    methods: []
+  };
+
+  it('genera una FK autorreferenciada 1:N usando el rol', () => {
+    const service = new SqlExportService();
+    const sql = service.exportToSql({
+      classes: [employeeClass],
+      relationships: [{
+        id: 'supervision',
+        type: 'association',
+        sourceId: 'employee',
+        targetId: 'employee',
+        labels: ['1', '0..*', 'supervisor', 'subordinates']
+      }]
+    });
+
+    expect(sql).toContain('ADD COLUMN supervisor_id INT');
+    expect(sql).toContain('FOREIGN KEY (supervisor_id) REFERENCES Employee(id)');
+  });
+
+  it('genera dos FK distintas para una autorrelación N:M', () => {
+    const service = new SqlExportService();
+    const sql = service.exportToSql({
+      classes: [employeeClass],
+      relationships: [{
+        id: 'mentoring',
+        type: 'association',
+        sourceId: 'employee',
+        targetId: 'employee',
+        labels: ['0..*', '0..*', 'mentor', 'mentee']
+      }]
+    });
+
+    expect(sql).toContain('PRIMARY KEY (mentor_id, mentee_id)');
+    expect(sql).toContain('FOREIGN KEY (mentor_id) REFERENCES Employee(id)');
+    expect(sql).toContain('FOREIGN KEY (mentee_id) REFERENCES Employee(id)');
+  });
+
+  it('ignora una autoherencia inválida', () => {
+    const service = new SqlExportService();
+    const sql = service.exportToSql({
+      classes: [employeeClass],
+      relationships: [{
+        id: 'invalid',
+        type: 'generalization',
+        sourceId: 'employee',
+        targetId: 'employee',
+        labels: []
+      }]
+    });
+
+    expect(sql).not.toContain('ALTER TABLE Employee');
+  });
+
   it('referencia una tabla intermedia con su clave compuesta completa', () => {
     const service = new SqlExportService();
     const sql = service.exportToSql({

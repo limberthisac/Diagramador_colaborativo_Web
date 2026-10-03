@@ -77,7 +77,10 @@ export class DiagramService {
         background: { color: '#f8f9fa' },
         defaultConnector: { name: 'rounded' },
         defaultLink: () => this.buildRelationship(),
-        validateConnection: (cvS: any, _mS: any, cvT: any, _mT: any) => cvS !== cvT,
+        // Las asociaciones reflexivas son válidas en UML. La autoherencia se
+        // bloquea en el flujo tipado, porque los enlaces arrastrados nacen como
+        // asociaciones simples.
+        validateConnection: (cvS: any, _mS: any, cvT: any, _mT: any) => !!cvS && !!cvT,
       });
       /**************************************************************************************************
        * ATAJOS DE TECLADO: copiar, pegar, duplicar, cortar
@@ -183,6 +186,7 @@ export class DiagramService {
       this.paper.on('element:pointerup', (view: any) => {
         const m = view.model;
         const p = m.position();
+        this.layoutRecursiveLinksForElement(m.id);
         this.collab.broadcast({ t: 'move', id: m.id, x: p.x, y: p.y });
         pendingPos = null; // limpiar
       });
@@ -249,6 +253,8 @@ export class DiagramService {
         const src = link.get('source')?.id;
         const trg = link.get('target')?.id;
         if (!src || !trg) return;
+
+        this.ensureRecursiveLinkLayout(link);
 
         if (!link.has('alreadyBroadcasted')) {
           link.set('alreadyBroadcasted', true, { silent: true });
@@ -462,6 +468,8 @@ export class DiagramService {
         // 👇 añade esto
         createTypedRelationship: (sourceId: string, targetId: string, type: string, remote = false) =>
           this.createTypedRelationship(sourceId, targetId, type, remote),
+        layoutRecursiveLinksForElement: (elementId: string, remote: boolean = false) =>
+          this.layoutRecursiveLinksForElement(elementId, remote),
 
         loadFromJson: (json) => this.loadFromJson(json),
         exportToJson: () => this.exportService.export(this.graph),
@@ -612,7 +620,13 @@ export class DiagramService {
     type: string = 'association',
     remote: boolean = false
   ) {
+    if (type === 'generalization' && sourceId === targetId) {
+      throw new Error('Una clase no puede heredar de sí misma.');
+    }
+
     const attrs = this.relationAttrs[type] || this.relationAttrs.association;
+
+    const isRecursive = sourceId === targetId && !DiagramService.isLinkAnchored(type);
 
     const link = new this.joint.dia.Link({
       name: 'Relacion',
@@ -629,7 +643,7 @@ export class DiagramService {
     // solo corresponden a relaciones estructurales (asociación, agregación
     // y composición); una clase de asociación tampoco las usa.
     if (!DiagramService.isLinkAnchored(type) && type !== 'generalization') {
-      link.set('labels', [
+      const labels: any[] = [
         {
           position: { distance: 20, offset: -10 },
           attrs: { text: { text: '0..1', fill: '#333', fontSize: 12 } },
@@ -640,13 +654,80 @@ export class DiagramService {
           attrs: { text: { text: '1..*', fill: '#333', fontSize: 12 } },
           markup: [{ tagName: 'text', selector: 'text' }]
         }
-      ]);
+      ];
+
+      // En una autorrelación el nombre de la clase no alcanza para distinguir
+      // los extremos. Estos roles son editables con doble clic, igual que las
+      // cardinalidades, y los generadores los usan como nombres de campos/FK.
+      if (isRecursive) {
+        labels.push(
+          {
+            position: { distance: 0.2, offset: 12 },
+            attrs: { text: { text: 'parent', fill: '#333', fontSize: 12 } },
+            markup: [{ tagName: 'text', selector: 'text' }]
+          },
+          {
+            position: { distance: 0.8, offset: 12 },
+            attrs: { text: { text: 'children', fill: '#333', fontSize: 12 } },
+            markup: [{ tagName: 'text', selector: 'text' }]
+          }
+        );
+      }
+      link.set('labels', labels);
     }
+
+    if (isRecursive) this.ensureRecursiveLinkLayout(link, true);
 
     if (!remote) {
       this.graph.addCell(link);       // 👈 disparará 'add' → broadcast
     }
     return link;
+  }
+
+  /** Coloca un autoenlace como un bucle por encima de su clase. */
+  private ensureRecursiveLinkLayout(
+    link: any,
+    force: boolean = false,
+    options: { collab?: boolean } = {}
+  ): void {
+    const sourceId = link?.get('source')?.id;
+    const targetId = link?.get('target')?.id;
+    if (!sourceId || sourceId !== targetId) return;
+    if (link.get('relationType') === 'generalization') return;
+    this.ensureRecursiveRoleLabels(link);
+    if (!force && (link.get('vertices') || []).length > 0) return;
+
+    const bbox = this.graph?.getCell(sourceId)?.getBBox?.();
+    if (!bbox) return;
+    const margin = Math.max(50, Math.min(90, bbox.width / 2));
+    link.set('vertices', [
+      { x: bbox.x + bbox.width + margin, y: bbox.y - margin },
+      { x: bbox.x - margin, y: bbox.y - margin }
+    ], options);
+  }
+
+  /** Completa roles en autoenlaces creados arrastrando puertos o archivos viejos. */
+  private ensureRecursiveRoleLabels(link: any): void {
+    const labels = link.get('labels') || [];
+    if (labels.length < 2 || labels.length >= 4) return;
+    const roleLabel = (text: string, distance: number) => ({
+      position: { distance, offset: 12 },
+      attrs: { text: { text, fill: '#333', fontSize: 12 } },
+      markup: [{ tagName: 'text', selector: 'text' }]
+    });
+    if (labels.length === 2) link.appendLabel(roleLabel('parent', 0.2));
+    if ((link.get('labels') || []).length === 3) {
+      link.appendLabel(roleLabel('children', 0.8));
+    }
+  }
+
+  /** Reubica los bucles cuando su clase se mueve, local o remotamente. */
+  layoutRecursiveLinksForElement(elementId: string, remote: boolean = false): void {
+    this.graph?.getLinks?.()
+      .filter((link: any) =>
+        link.get('source')?.id === elementId && link.get('target')?.id === elementId)
+      .forEach((link: any) =>
+        this.ensureRecursiveLinkLayout(link, true, remote ? { collab: true } : {}));
   }
 
   /**************************************************************************************************
@@ -987,6 +1068,11 @@ export class DiagramService {
       const srcId = idMap[rel.sourceId] || rel.sourceId;
       const trgId = idMap[rel.targetId] || rel.targetId;
 
+      if (rel.type === 'generalization' && srcId === trgId) {
+        console.warn('[Diagram] Se omitió una autoherencia inválida:', rel.id);
+        return;
+      }
+
       const existingLink = this.graph.getLinks().find((l: any) => {
         return (
           l.get('source')?.id === srcId &&
@@ -1009,10 +1095,15 @@ export class DiagramService {
 
       // 🔹 aplicar labels si vienen
       if (rel.labels && !DiagramService.isLinkAnchored(rel.type)) {
+        const recursive = srcId === trgId;
         link.set(
           'labels',
           rel.labels.map((txt: string, i: number) => ({
-            position: { distance: i === 0 ? 20 : -20, offset: -10 },
+            position: recursive && i === 2
+              ? { distance: 0.2, offset: 12 }
+              : recursive && i === 3
+                ? { distance: 0.8, offset: 12 }
+                : { distance: i === 0 ? 20 : -20, offset: -10 },
             attrs: { text: { text: txt, fill: '#333', fontSize: 12 } },
             markup: [{ tagName: 'text', selector: 'text' }]
           }))
@@ -1023,6 +1114,8 @@ export class DiagramService {
       if (rel.vertices && rel.vertices.length > 0) {
         link.set('vertices', rel.vertices);
       }
+
+      if (srcId === trgId) this.ensureRecursiveLinkLayout(link);
 
       this.graph.addCell(link);
     };
@@ -1717,6 +1810,12 @@ export class DiagramService {
    * Aplica los cambios específicos a una relación encontrada
    */
   private applyRelationshipChanges(existingLink: any, editedRelation: any) {
+    const nextSource = editedRelation.sourceId || existingLink.get('source')?.id;
+    const nextTarget = editedRelation.targetId || existingLink.get('target')?.id;
+    if (editedRelation.type === 'generalization' && nextSource === nextTarget) {
+      console.warn('[Diagram] Se rechazó una autoherencia inválida.');
+      return;
+    }
     // 1. Actualizar tipo de relación
     if (editedRelation.type) {
       const newAttrs = this.relationAttrs[editedRelation.type] || this.relationAttrs.association;

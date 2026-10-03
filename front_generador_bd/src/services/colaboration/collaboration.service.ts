@@ -111,6 +111,7 @@ export class CollaborationService {
           const m = graph.getCell(op.id);
           if (!m) break;
           m.position(op.x, op.y);
+          this.api?.layoutRecursiveLinksForElement?.(op.id, true);
           break;
         }
         case 'resize': {

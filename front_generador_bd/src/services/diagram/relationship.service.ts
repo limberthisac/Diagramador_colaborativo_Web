@@ -53,7 +53,9 @@ export class RelationshipService {
 	private instructionFor(type: string): string {
 		return DiagramService.isLinkAnchored(type)
 			? 'Hacé clic sobre la línea de la asociación, y después sobre la clase con los atributos.'
-			: 'Hacé clic en la clase de origen y después en la de destino.';
+			: type === 'generalization'
+				? 'Hacé clic en la clase hija y después en la clase padre.'
+				: 'Hacé clic en la clase de origen y después en la de destino. Podés elegir la misma clase para crear una autorrelación.';
 	}
 
 	/**
@@ -134,6 +136,16 @@ export class RelationshipService {
 
 	/** Igual que `validateSource`, para el segundo clic. */
 	private validateTarget(model: any): string | null {
+		// Una autorrelación es válida para asociaciones, agregaciones,
+		// composiciones y dependencias. La generalización es la excepción:
+		// una clase nunca puede heredar de sí misma.
+		if (
+			this.currentType === 'generalization' &&
+			this.sourceElement?.id === model?.id
+		) {
+			return 'Una clase no puede heredar de sí misma.';
+		}
+
 		if (!DiagramService.isLinkAnchored(this.currentType)) return null;
 
 		if (!model?.isElement?.()) {

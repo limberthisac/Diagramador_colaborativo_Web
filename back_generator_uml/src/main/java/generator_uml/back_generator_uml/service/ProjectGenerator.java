@@ -102,6 +102,7 @@ public class ProjectGenerator {
 
                     boolean sourceIsMany = sourceCard.contains("*");
                     boolean targetIsMany = targetCard.contains("*");
+                    boolean recursive = rel.getSourceId().equals(rel.getTargetId());
 
                     // Si es ManyToMany, crear entidad intermedia
                     if (sourceIsMany && targetIsMany) {
@@ -109,7 +110,7 @@ public class ProjectGenerator {
                         String targetEntity = NamingUtil.toJavaClass(targetName);
                         
                         // Crear clave única para evitar duplicados (ordenar alfabéticamente)
-                        String relKey = sourceEntity.compareTo(targetEntity) < 0 
+                        String relKey = recursive ? "recursive_" + rel.getId() : sourceEntity.compareTo(targetEntity) < 0
                                 ? sourceEntity + "_" + targetEntity 
                                 : targetEntity + "_" + sourceEntity;
                         
@@ -121,12 +122,24 @@ public class ProjectGenerator {
                             String secondEntity = sourceEntity.compareTo(targetEntity) < 0 ? targetEntity : sourceEntity;
                             String firstEntityField = NamingUtil.toField(firstEntity);
                             String secondEntityField = NamingUtil.toField(secondEntity);
+
+                            if (recursive) {
+                                firstEntityField = NamingUtil.roleField(
+                                        rel.getLabels().size() > 2 ? rel.getLabels().get(2) : null,
+                                        "source");
+                                secondEntityField = NamingUtil.roleField(
+                                        rel.getLabels().size() > 3 ? rel.getLabels().get(3) : null,
+                                        "target");
+                                if (firstEntityField.equals(secondEntityField)) {
+                                    secondEntityField += "Target";
+                                }
+                            }
                             
                             // Nombre de la entidad intermedia: el que puso el usuario si
                             // colgó una clase de asociación, o el inventado si no.
                             UmlClass asociacion = assocPorConector.get(rel.getId());
                             String intermediateEntityName =
-                                    AssociationClassUtil.nombreIntermedia(sourceEntity, targetEntity, asociacion);
+                                    AssociationClassUtil.nombreIntermedia(sourceEntity, targetEntity, asociacion, rel);
 
                             // Crear contexto para la entidad intermedia
                             Map<String, Object> intermediateCtx = new HashMap<>();
@@ -221,7 +234,9 @@ public class ProjectGenerator {
             String parentClass = null;
             if (schema.getRelationships() != null) {
                 for (var rel : schema.getRelationships()) {
-                    if ("generalization".equals(rel.getType()) && rel.getSourceId().equals(c.getId())) {
+                    if ("generalization".equals(rel.getType())
+                            && rel.getSourceId().equals(c.getId())
+                            && !rel.getSourceId().equals(rel.getTargetId())) {
                         parentClass = schema.getClasses().stream()
                                 .filter(pc -> pc.getId().equals(rel.getTargetId()))
                                 .map(UmlClass::getName)
@@ -312,7 +327,9 @@ public class ProjectGenerator {
                     String targetEntity = NamingUtil.toJavaClass(targetName);
 
                     if ("generalization".equals(rel.getType()) && rel.getSourceId().equals(c.getId())) {
-                        parentClass = targetEntity;
+                        if (!rel.getSourceId().equals(rel.getTargetId())) {
+                            parentClass = targetEntity;
+                        }
                     }
 
                     // ---- Asociaciones / Agregación / Composición / Dependencia ----
@@ -346,6 +363,14 @@ public class ProjectGenerator {
                         // 3) Detectar "many"
                         boolean sourceIsMany = sourceCard.contains("*");
                         boolean targetIsMany = targetCard.contains("*");
+                        boolean recursive = rel.getSourceId().equals(rel.getTargetId());
+                        String sourceRole = NamingUtil.roleField(
+                                rel.getLabels().size() > 2 ? rel.getLabels().get(2) : null,
+                                "parent");
+                        String targetRole = NamingUtil.roleField(
+                                rel.getLabels().size() > 3 ? rel.getLabels().get(3) : null,
+                                "children");
+                        if (sourceRole.equals(targetRole)) targetRole += "Target";
 
                         // 👇 Nuevo: nunca dejes que dependency sea tratado como 1..1
                         if ("dependency".equals(rel.getType()) && !sourceIsMany && !targetIsMany) {
@@ -360,14 +385,14 @@ public class ProjectGenerator {
                                 // source *..1 target => Source tiene ManyToOne hacia Target
                                 manyToOne.add(Map.of(
                                         "TargetEntity", targetEntity,
-                                        "targetField", NamingUtil.toField(targetEntity)
+                                        "targetField", recursive ? targetRole : NamingUtil.toField(targetEntity)
                                 ));
                             } else if (!sourceIsMany && !targetIsMany) {
                                 // 1..1 => OneToOne
                                 boolean isComposition = "composition".equals(rel.getType());
                                 oneToOne.add(Map.of(
                                         "TargetEntity", targetEntity,
-                                        "targetField", NamingUtil.toField(targetEntity),
+                                        "targetField", recursive ? targetRole : NamingUtil.toField(targetEntity),
                                         "composition", isComposition
                                 ));
                                 if (isComposition) {
@@ -376,20 +401,20 @@ public class ProjectGenerator {
                             } else if (sourceIsMany && targetIsMany) {
                                 // *..* => Crear OneToMany hacia entidad intermedia
                                 String intermediateEntityName = AssociationClassUtil.nombreIntermedia(
-                                        sourceEntity, targetEntity, assocPorConector.get(rel.getId()));
+                                        sourceEntity, targetEntity, assocPorConector.get(rel.getId()), rel);
                                 String mappedByField = NamingUtil.toField(sourceEntity);
                                 
                                 oneToMany.add(Map.of(
                                         "TargetEntity", intermediateEntityName,
-                                        "collectionField", NamingUtil.toField(intermediateEntityName),
-                                        "mappedBy", mappedByField
+                                        "collectionField", recursive ? targetRole + "Links" : NamingUtil.toField(intermediateEntityName),
+                                        "mappedBy", recursive ? sourceRole : mappedByField
                                 ));
                             } else if (!sourceIsMany && targetIsMany) {
                                 // source 1..* target => Source tiene OneToMany
                                 oneToMany.add(Map.of(
                                         "TargetEntity", targetEntity,
-                                        "collectionField", NamingUtil.toField(targetEntity),
-                                        "mappedBy", NamingUtil.toField(sourceEntity)
+                                        "collectionField", recursive ? targetRole : NamingUtil.toField(targetEntity),
+                                        "mappedBy", recursive ? sourceRole : NamingUtil.toField(sourceEntity)
                                 ));
                             }
                         }
@@ -400,25 +425,25 @@ public class ProjectGenerator {
                                 // source *..1 target => Target tiene OneToMany hacia Source
                                 oneToMany.add(Map.of(
                                         "TargetEntity", sourceEntity,
-                                        "collectionField", NamingUtil.toField(sourceEntity),
-                                        "mappedBy", NamingUtil.toField(targetEntity)
+                                        "collectionField", recursive ? sourceRole : NamingUtil.toField(sourceEntity),
+                                        "mappedBy", recursive ? targetRole : NamingUtil.toField(targetEntity)
                                 ));
                             } else if (targetIsMany && !sourceIsMany) {
                                 // source 1..* target => Target tiene ManyToOne hacia Source
                                 manyToOne.add(Map.of(
                                         "TargetEntity", sourceEntity,
-                                        "targetField", NamingUtil.toField(sourceEntity)
+                                        "targetField", recursive ? sourceRole : NamingUtil.toField(sourceEntity)
                                 ));
                             } else if (targetIsMany && sourceIsMany) {
                                 // source *..* target => Target también tiene OneToMany hacia entidad intermedia
                                 String intermediateEntityName = AssociationClassUtil.nombreIntermedia(
-                                        sourceEntity, targetEntity, assocPorConector.get(rel.getId()));
+                                        sourceEntity, targetEntity, assocPorConector.get(rel.getId()), rel);
                                 String mappedByField = NamingUtil.toField(targetEntity);
                                 
                                 oneToMany.add(Map.of(
                                         "TargetEntity", intermediateEntityName,
-                                        "collectionField", NamingUtil.toField(intermediateEntityName),
-                                        "mappedBy", mappedByField
+                                        "collectionField", recursive ? sourceRole + "Links" : NamingUtil.toField(intermediateEntityName),
+                                        "mappedBy", recursive ? targetRole : mappedByField
                                 ));
                             }
                             // 1..1 no se duplica si ya lo generaste en source
@@ -470,7 +495,9 @@ public class ProjectGenerator {
             }
 
             boolean isParent = schema.getRelationships().stream()
-                    .anyMatch(r -> "generalization".equals(r.getType()) && r.getTargetId().equals(c.getId()));
+                    .anyMatch(r -> "generalization".equals(r.getType())
+                            && !r.getSourceId().equals(r.getTargetId())
+                            && r.getTargetId().equals(c.getId()));
 
             // ====== CONTEXTO MUSTACHE ======
             Map<String, Object> entityCtx = new HashMap<>();

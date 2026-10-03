@@ -128,6 +128,31 @@ describe('Importar y exportar', () => {
       .withContext('una herencia no lleva cardinalidades').toBeTrue();
   });
 
+  it('conserva los roles de una asociación reflexiva', () => {
+    const recursive: UmlExportDTO = {
+      classes: [{
+        id: 'employee',
+        name: 'Employee',
+        attributes: [{ name: 'id', type: 'int' }],
+        methods: [],
+        position: { x: 100, y: 100 },
+        size: { width: 180, height: 110 }
+      }],
+      relationships: [{
+        id: 'supervision',
+        type: 'association',
+        sourceId: 'employee',
+        targetId: 'employee',
+        labels: ['1', '0..*', 'supervisor', 'subordinates']
+      }]
+    };
+
+    exportador.exportToXmi(recursive);
+    const imported = importador.parse(xmlExportado).diagram.relationships[0];
+    expect(imported.sourceId).toBe(imported.targetId);
+    expect(imported.labels).toEqual(['1', '0..*', 'supervisor', 'subordinates']);
+  });
+
   it('conserva la disposición relativa de las clases', () => {
     const { original, final } = idaYVuelta();
 

@@ -129,6 +129,8 @@ export class SqlExportService {
       // exactamente lo que la herencia no debería permitir.
       // `source` es la hija y `target` el padre, igual que en el recorrido de tablas.
       if (rel.type === 'generalization') {
+        // La autoherencia no es válida en UML y generaría una FK/PK circular.
+        if (rel.sourceId === rel.targetId) continue;
         const childPk = this.getPrimaryKeyInfo(source, umlJson);
         const parentPk = this.getPrimaryKeyInfo(target, umlJson);
         const fkName = `fk_${source.name.toLowerCase()}_${target.name.toLowerCase()}`;
@@ -153,8 +155,23 @@ export class SqlExportService {
         // Una clase de asociación puede ser, a su vez, el extremo de otra
         // relación N:M. En ese caso no tiene una PK simple: su tabla conserva
         // las dos columnas que forman la PK del conector original.
-        const srcKey = this.getJoinKeyParts(source, umlJson, assocClassByLink);
-        const trgKey = this.getJoinKeyParts(target, umlJson, assocClassByLink);
+        let srcKey = this.getJoinKeyParts(source, umlJson, assocClassByLink);
+        let trgKey = this.getJoinKeyParts(target, umlJson, assocClassByLink);
+
+        // En una N:M reflexiva ambas claves apuntan a la misma tabla. Sin roles,
+        // las dos columnas tendrían exactamente el mismo nombre.
+        if (rel.sourceId === rel.targetId) {
+          const sourceRole = this.sqlIdentifier(rel.labels?.[2] || 'source');
+          const targetRole = this.sqlIdentifier(rel.labels?.[3] || 'target');
+          srcKey = srcKey.map((part, index) => ({
+            ...part,
+            localName: `${sourceRole}${srcKey.length > 1 ? `_${index + 1}` : ''}_id`
+          }));
+          trgKey = trgKey.map((part, index) => ({
+            ...part,
+            localName: `${targetRole}${trgKey.length > 1 ? `_${index + 1}` : ''}_id`
+          }));
+        }
         const keyParts = [...srcKey, ...trgKey];
 
         const cols: string[] = keyParts.map(
@@ -170,14 +187,20 @@ export class SqlExportService {
         }
 
         cols.push(`  PRIMARY KEY (${keyParts.map(part => part.localName).join(', ')})`);
+        const sourceConstraintSuffix = rel.sourceId === rel.targetId
+          ? this.sqlIdentifier(rel.labels?.[2] || 'source')
+          : source.name.toLowerCase();
+        const targetConstraintSuffix = rel.sourceId === rel.targetId
+          ? this.sqlIdentifier(rel.labels?.[3] || 'target')
+          : target.name.toLowerCase();
         cols.push(
-          `  CONSTRAINT fk_${joinTable}_${source.name.toLowerCase()} ` +
+          `  CONSTRAINT fk_${joinTable}_${sourceConstraintSuffix} ` +
           `FOREIGN KEY (${srcKey.map(part => part.localName).join(', ')}) ` +
           `REFERENCES ${source.name}(${srcKey.map(part => part.referencedName).join(', ')}) ` +
           `ON DELETE CASCADE ON UPDATE CASCADE`
         );
         cols.push(
-          `  CONSTRAINT fk_${joinTable}_${target.name.toLowerCase()} ` +
+          `  CONSTRAINT fk_${joinTable}_${targetConstraintSuffix} ` +
           `FOREIGN KEY (${trgKey.map(part => part.localName).join(', ')}) ` +
           `REFERENCES ${target.name}(${trgKey.map(part => part.referencedName).join(', ')}) ` +
           `ON DELETE CASCADE ON UPDATE CASCADE`
@@ -194,6 +217,10 @@ export class SqlExportService {
       let column = `${target.name.toLowerCase()}_id`;
       let onDelete = 'SET NULL';
       let notNull = '';
+      const recursive = rel.sourceId === rel.targetId;
+      const sourceRole = this.sqlIdentifier(rel.labels?.[2] || 'parent');
+      const targetRole = this.sqlIdentifier(rel.labels?.[3] || 'related');
+      let recursiveColumnRole = targetRole;
 
       // Si es 1:N, la FK va en el lado N, o si es dependencia, siempre FK en source
       if (['association', 'aggregation', 'composition', 'dependency'].includes(rel.type)) {
@@ -218,6 +245,7 @@ export class SqlExportService {
             refTable = source;
             fkName = `fk_${target.name.toLowerCase()}_${source.name.toLowerCase()}`;
             column = `${source.name.toLowerCase()}_id`;
+            recursiveColumnRole = sourceRole;
           } else {
             // 1:1 o caso ambiguo, por convención FK en source
             fkTable = source;
@@ -234,6 +262,11 @@ export class SqlExportService {
           } else if (rel.type === 'association') {
             onDelete = 'SET NULL';
           }
+        }
+        if (recursive) {
+          // El nombre del campo corresponde al rol del extremo referenciado.
+          column = `${recursiveColumnRole}_id`;
+          fkName = `fk_${fkTable.name.toLowerCase()}_${column.replace(/_id$/, '')}`;
         }
         // El tipo de la columna tiene que ser el de la clave primaria que
         // referencia. Antes era `UUID` fijo, así que una PK `INT` o
@@ -342,6 +375,18 @@ export class SqlExportService {
 
   private getPrimaryKey(cls: any, umlJson?: any): string {
     return this.getPrimaryKeyInfo(cls, umlJson).name;
+  }
+
+  /** Convierte un rol UML en un identificador SQL sencillo y estable. */
+  private sqlIdentifier(value: string): string {
+    const normalized = (value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+      .replace(/[^a-zA-Z0-9_]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .toLowerCase();
+    return normalized || 'related';
   }
 
   downloadSql(umlJson: any, fileName: string = 'diagram.sql'): void {

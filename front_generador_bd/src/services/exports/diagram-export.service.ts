@@ -21,7 +21,10 @@ export interface UmlRelationshipDTO {
   sourceId: string;
   /** Id de la clase de destino. */
   targetId: string;
-  /** Cardinalidades [origen, destino]. Una `associationClass` no las tiene. */
+  /**
+   * Cardinalidades [origen, destino]. En una autorrelación, los índices
+   * [2, 3] contienen los roles de origen y destino.
+   */
   labels?: string[];
   vertices?: { x: number; y: number }[];
 }

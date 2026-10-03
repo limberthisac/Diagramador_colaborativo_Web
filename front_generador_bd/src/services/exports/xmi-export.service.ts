@@ -63,10 +63,14 @@ export class XmiExportService {
         if (rel.type === 'associationClass') return;   // Se funde con su asociación
 
         const relId = rel.id || `rel_${index}`;
-        // En nuestro JSON exportado, los labels suelen estar en: [0] source, [1] target, [2] custom name
+        // En relaciones normales: [0] source, [1] target, [2] nombre. En una
+        // autorrelación [2] y [3] son los roles que distinguen ambos extremos.
         const sourceCard = (rel.labels && rel.labels.length > 0) ? rel.labels[0] : '';
         const targetCard = (rel.labels && rel.labels.length > 1) ? rel.labels[1] : '';
-        const relName = (rel.labels && rel.labels.length > 2) ? rel.labels[2] : '';
+        const recursive = rel.sourceId === rel.targetId;
+        const sourceRole = recursive && rel.labels?.length > 2 ? rel.labels[2] : '';
+        const targetRole = recursive && rel.labels?.length > 3 ? rel.labels[3] : '';
+        const relName = !recursive && rel.labels?.length > 2 ? rel.labels[2] : '';
 
         if (rel.type === 'dependency') {
           xml += `      <packagedElement xmi:type="uml:Dependency" xmi:id="${relId}" client="${rel.sourceId}" supplier="${rel.targetId}" name="${this.esc(relName)}"/>\n`;
@@ -100,11 +104,11 @@ export class XmiExportService {
         // la especificación dice que "composite" marca a la propiedad que está
         // agregada, y la agregada es la parte. En nuestro lienzo el rombo se
         // dibuja en el origen, así que la marca viaja al destino.
-        xml += `        <ownedEnd xmi:type="uml:Property" xmi:id="${relId}_src" type="${rel.sourceId}" association="${relId}">\n`;
+        xml += `        <ownedEnd xmi:type="uml:Property" xmi:id="${relId}_src" type="${rel.sourceId}" association="${relId}"${sourceRole ? ` name="${this.esc(sourceRole)}"` : ''}>\n`;
         xml += this.multiplicityXml(sourceCard, `${relId}_src`);
         xml += `        </ownedEnd>\n`;
 
-        xml += `        <ownedEnd xmi:type="uml:Property" xmi:id="${relId}_tgt" type="${rel.targetId}" association="${relId}" aggregation="${srcAggregation}">\n`;
+        xml += `        <ownedEnd xmi:type="uml:Property" xmi:id="${relId}_tgt" type="${rel.targetId}" association="${relId}" aggregation="${srcAggregation}"${targetRole ? ` name="${this.esc(targetRole)}"` : ''}>\n`;
         xml += this.multiplicityXml(targetCard, `${relId}_tgt`);
         xml += `        </ownedEnd>\n`;
 

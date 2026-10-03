@@ -2,6 +2,7 @@ package generator_uml.back_generator_uml.service;
 
 import generator_uml.back_generator_uml.entity.UmlClass;
 import generator_uml.back_generator_uml.entity.UmlSchema;
+import generator_uml.back_generator_uml.entity.UmlRelationship;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -72,5 +73,26 @@ public final class AssociationClassUtil {
         return sourceEntity.compareTo(targetEntity) < 0
                 ? sourceEntity + targetEntity
                 : targetEntity + sourceEntity;
+    }
+
+    /**
+     * Variante que evita que dos N:M reflexivas terminen generando la misma
+     * entidad. Los roles forman parte del nombre cuando no existe una clase de
+     * asociación nombrada por el usuario.
+     */
+    public static String nombreIntermedia(String sourceEntity, String targetEntity,
+                                          UmlClass asociacion, UmlRelationship relacion) {
+        if (asociacion != null) return NamingUtil.toJavaClass(asociacion.getName());
+        if (relacion != null && relacion.getSourceId().equals(relacion.getTargetId())) {
+            String sourceRole = NamingUtil.roleField(
+                    relacion.getLabels().size() > 2 ? relacion.getLabels().get(2) : null,
+                    "source");
+            String targetRole = NamingUtil.roleField(
+                    relacion.getLabels().size() > 3 ? relacion.getLabels().get(3) : null,
+                    "target");
+            return sourceEntity + NamingUtil.toJavaClass(sourceRole)
+                    + NamingUtil.toJavaClass(targetRole);
+        }
+        return nombreIntermedia(sourceEntity, targetEntity, null);
     }
 }
