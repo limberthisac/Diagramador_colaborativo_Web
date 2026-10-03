@@ -181,6 +181,9 @@ export class DiagramService {
       this.paper.on('element:pointermove', (view: any) => {
         const m = view.model;
         const p = m.position();
+        // El enlace debe acompañar a la clase durante el arrastre, no saltar a
+        // su nueva posición recién al soltar el mouse.
+        this.layoutRecursiveLinksForElement(m.id, false, true);
         pendingPos = { id: m.id, x: p.x, y: p.y };
       });
       this.paper.on('element:pointerup', (view: any) => {
@@ -255,7 +258,11 @@ export class DiagramService {
         const trg = link.get('target')?.id;
         if (!src || !trg) return;
 
-        this.ensureRecursiveLinkLayout(link);
+        if (src === trg) {
+          this.ensureRecursiveLinkLayout(link, true);
+        } else {
+          this.clearRecursiveLinkLayout(link);
+        }
 
         if (!link.has('alreadyBroadcasted')) {
           link.set('alreadyBroadcasted', true, { silent: true });
@@ -710,6 +717,7 @@ export class DiagramService {
     const centerY = bbox.y + bbox.height / 2;
     const margin = Math.max(70, Math.min(120, bbox.width * 0.55));
     const outerX = bbox.x + bbox.width + margin;
+    link.set('isRecursiveLayout', true, { silent: true });
     link.set({
       source: {
         id: sourceId,
@@ -724,6 +732,19 @@ export class DiagramService {
       { x: outerX, y: upperY },
       { x: outerX, y: lowerY }
     ], options);
+  }
+
+  /** Quita anclas y vértices especiales si una punta se mueve a otra clase. */
+  private clearRecursiveLinkLayout(link: any): void {
+    if (!link.get('isRecursiveLayout')) return;
+    const sourceId = link.get('source')?.id;
+    const targetId = link.get('target')?.id;
+    link.set('isRecursiveLayout', false, { silent: true });
+    link.set({
+      source: sourceId ? { id: sourceId } : undefined,
+      target: targetId ? { id: targetId } : undefined,
+      vertices: []
+    }, { recursiveLayout: true });
   }
 
   /** Completa roles en autoenlaces creados arrastrando puertos o archivos viejos. */
@@ -742,12 +763,20 @@ export class DiagramService {
   }
 
   /** Reubica los bucles cuando su clase se mueve, local o remotamente. */
-  layoutRecursiveLinksForElement(elementId: string, remote: boolean = false): void {
+  layoutRecursiveLinksForElement(
+    elementId: string,
+    remote: boolean = false,
+    transient: boolean = false
+  ): void {
     this.graph?.getLinks?.()
       .filter((link: any) =>
         link.get('source')?.id === elementId && link.get('target')?.id === elementId)
       .forEach((link: any) =>
-        this.ensureRecursiveLinkLayout(link, true, remote ? { collab: true } : {}));
+        this.ensureRecursiveLinkLayout(
+          link,
+          true,
+          remote || transient ? { collab: true } : {}
+        ));
   }
 
   /**************************************************************************************************
@@ -1800,13 +1829,10 @@ export class DiagramService {
       }
     }
 
-    // Broadcast para colaboración
-    this.collab.broadcast({
-      t: 'move_link',
-      id: newLink.id,
-      sourceId: sourceId,
-      targetId: targetId
-    });
+    // `remote=true` permitió configurar todo antes de insertar. Sin este alta
+    // el enlace solo existía como objeto temporal: no salía en SQL, respaldo
+    // ni colaboración cuando la edición cambiaba ambos extremos.
+    this.graph.addCell(newLink);
 
     // Broadcast para etiquetas/cardinalidades
     if (editedRelation.labels && Array.isArray(editedRelation.labels)) {
