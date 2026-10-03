@@ -199,10 +199,13 @@ export class EditionService {
     const attrsHText = this.getTextBBox(model, paper, '.uml-class-attrs-text');
     const methsHText = this.getTextBBox(model, paper, '.uml-class-methods-text');
 
-    const attrsH = Math.max(this.MIN_ATTRS_H, Math.round((attrsHText || 0) + this.PAD_V));
+    const contentAttrsH = Math.max(this.MIN_ATTRS_H, Math.round((attrsHText || 0) + this.PAD_V));
     const methsH = Math.max(this.MIN_METHS_H, Math.round((methsHText || 0) + this.PAD_V));
-    const contentH = Math.round(nameH + attrsH + methsH);
+    const contentH = Math.round(nameH + contentAttrsH + methsH);
     const totalH = Math.max(contentH, manualSize?.height || 0);
+    // El alto manual adicional pertenece al compartimiento de atributos. El de
+    // métodos conserva exactamente el espacio que necesita su contenido.
+    const attrsH = contentAttrsH + (totalH - contentH);
 
     // Un píxel menos que la franja: el rectángulo arranca en y=1 para no tapar
     // la mitad interior del trazo de `.uml-outer` (ver createUmlNamespace).

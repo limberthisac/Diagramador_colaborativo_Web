@@ -52,4 +52,39 @@ describe('EditionService - tamaño manual', () => {
       service.NAME_H + service.MIN_ATTRS_H + service.MIN_METHS_H
     );
   });
+
+  it('asigna el alto adicional a atributos y mantiene fijo el bloque de métodos', () => {
+    const service = new EditionService({} as any, {} as any);
+    const state: Record<string, any> = { size: { width: 180, height: 110 } };
+    const attrs: Record<string, any> = {};
+    const model = {
+      isElement: () => true,
+      get: (key: string) => state[key],
+      set: (key: string, value: any) => state[key] = value,
+      size: () => state['size'],
+      resize: (width: number, height: number) => state['size'] = { width, height },
+      attr: (path: string | Record<string, any>, value?: any) => {
+        if (typeof path === 'string') attrs[path] = value;
+        else Object.assign(attrs, path);
+      },
+      portProp: () => undefined
+    };
+    const paper = {
+      findViewByModel: () => ({
+        findBySelector: (selector: string) => [{
+          getBBox: () => ({ height: selector.includes('methods') ? 20 : 30 })
+        }]
+      })
+    };
+
+    service.setManualSize(model, paper, 220, 260);
+
+    const separatorY = attrs['.sep-attrs'].y1;
+    const methodsTop = Number(
+      String(attrs['.uml-class-methods-text/transform']).match(/,\s*(\d+)/)?.[1]
+    );
+    expect(separatorY).toBe(230.5);
+    expect(methodsTop).toBe(240);
+    expect(state['size'].height - separatorY).toBeCloseTo(29.5, 1);
+  });
 });
