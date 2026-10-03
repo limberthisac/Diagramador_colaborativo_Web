@@ -381,6 +381,7 @@ export class DiagramService {
         if (this.selectedCell?.isElement?.()) {
           this.selectedCell.attr('.uml-outer/stroke', '#2196f3');
           this.selectedCell.attr('.uml-outer/stroke-width', 2);
+          this.selectedCell.attr('.uml-resize-handle/display', 'none');
           this.selectedCell.getPorts().forEach((p: any) => {
             this.selectedCell.portProp(p.id, 'attrs/circle/display', 'none');
           });
@@ -389,10 +390,41 @@ export class DiagramService {
         if (this.selectedCell?.isElement?.()) {
           this.selectedCell.attr('.uml-outer/stroke', '#ff9800');
           this.selectedCell.attr('.uml-outer/stroke-width', 2);
+          this.selectedCell.attr('.uml-resize-handle/display', 'block');
           this.selectedCell.getPorts().forEach((p: any) => {
             this.selectedCell.portProp(p.id, 'attrs/circle/display', 'block');
           });
         }
+      });
+      // Controlador de tamaño en la esquina inferior derecha. JointJS emite
+      // este evento por el atributo `event` del rectángulo SVG.
+      this.paper.on('element:resize-handle:pointerdown', (view: any, evt: any) => {
+        const original = evt?.originalEvent || evt;
+        original?.preventDefault?.();
+        original?.stopPropagation?.();
+
+        const model = view.model;
+        const startSize = model.size();
+        const startX = original?.clientX ?? 0;
+        const startY = original?.clientY ?? 0;
+
+        const onMove = (moveEvt: PointerEvent) => {
+          const width = startSize.width + (moveEvt.clientX - startX) / this.currentScale;
+          const height = startSize.height + (moveEvt.clientY - startY) / this.currentScale;
+          this.edition.setManualSize(model, this.paper, width, height);
+          this.layoutRecursiveLinksForElement(model.id, false, true);
+          this.paper.trigger('element:resize', view);
+        };
+
+        const onUp = () => {
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          this.layoutRecursiveLinksForElement(model.id);
+          this.paper.trigger('element:resize:pointerup', view);
+        };
+
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp, { once: true });
       });
       //👉 Deselect al hacer click en el fondo
       this.paper.on('blank:pointerclick', () => this.clearSelection());
@@ -798,6 +830,7 @@ export class DiagramService {
       name: cell.get('name'),
       position: { x: cell.position().x + 30, y: cell.position().y + 30 }, // desplazada
       size: cell.size(),
+      manualSize: cell.get('manualSize'),
       attributes: cell.get('attributes'),
       methods: cell.get('methods'),
     };
@@ -815,6 +848,7 @@ export class DiagramService {
     if (this.selectedCell?.isElement?.()) {
       this.selectedCell.attr('.uml-outer/stroke', '#2196f3');
       this.selectedCell.attr('.uml-outer/stroke-width', 2);
+      this.selectedCell.attr('.uml-resize-handle/display', 'none');
       this.selectedCell.getPorts().forEach((p: any) => {
         this.selectedCell.portProp(p.id, 'attrs/circle/display', 'none');
       });
@@ -870,6 +904,7 @@ export class DiagramService {
         name: classModel.name || 'Entidad',
         attributes: attributesText,
         methods: methodsText,
+        manualSize: classModel.manualSize,
       });
       // 🔹 Asignar ID remoto si viene del payload
       if (classModel.id) {
@@ -883,7 +918,11 @@ export class DiagramService {
       umlClass.addPort({ group: 'inout', id: 'left' });
       umlClass.addPort({ group: 'inout', id: 'right' });
       umlClass.on('change:size', () => this.edition.updatePorts(umlClass));
-      umlClass.on('change:attrs', () => this.edition.scheduleAutoResize(this.paper, umlClass));
+      umlClass.on('change:attrs', (_model: any, _value: any, options: any = {}) => {
+        if (!options?.resizeHandle) {
+          this.edition.scheduleAutoResize(this.paper, umlClass);
+        }
+      });
       // 🔹 Añadir al grafo SOLO UNA VEZ
       this.graph.addCell(umlClass);
       this.edition.scheduleAutoResize(umlClass, this.paper);
@@ -897,6 +936,7 @@ export class DiagramService {
             name: classModel.name,
             position: classModel.position,
             size: classModel.size,
+            manualSize: classModel.manualSize,
             attributes: classModel.attributes,
             methods: classModel.methods,
           },
@@ -976,6 +1016,20 @@ export class DiagramService {
           textWrap: { width: -20, height: 'auto' },
           whiteSpace: 'pre-wrap',
         },
+        '.uml-resize-handle': {
+          x: 168,
+          y: 98,
+          width: 12,
+          height: 12,
+          rx: 2,
+          ry: 2,
+          fill: '#ff9800',
+          stroke: '#ffffff',
+          strokeWidth: 1,
+          cursor: 'nwse-resize',
+          display: 'none',
+          event: 'element:resize-handle:pointerdown'
+        },
       },
       ports: {
         groups: {
@@ -1007,6 +1061,7 @@ export class DiagramService {
         '<text class="uml-class-attrs-text"/>',
         '<text class="uml-class-methods-text"/>',
         '<g class="ports"/>',
+        '<rect class="uml-resize-handle"/>',
         '</g>',
       ].join(''),
     });
@@ -1083,6 +1138,7 @@ export class DiagramService {
         idMap[cls.id] = existing.id;
         // 🔹 restaurar posición/tamaño si vino del storage
         if (cls.position) existing.position(cls.position.x, cls.position.y);
+        if (cls.manualSize) existing.set('manualSize', cls.manualSize);
         if (cls.size) existing.resize(cls.size.width, cls.size.height);
       } else {
         const newCls = this.createUmlClass({
@@ -1090,6 +1146,7 @@ export class DiagramService {
           name: cls.name,
           position: cls.position || { x: 100, y: 100 },
           size: cls.size || { width: 180, height: 110 },
+          manualSize: cls.manualSize,
           attributes: cls.attributes,
           methods: cls.methods
         });

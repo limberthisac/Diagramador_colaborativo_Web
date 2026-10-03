@@ -117,6 +117,7 @@ export class CollaborationService {
         case 'resize': {
           const m = graph.getCell(op.id);
           if (!m) break;
+          m.set('manualSize', { width: op.w, height: op.h }, { collab: true });
           m.resize(op.w, op.h);
           this.api?.layoutRecursiveLinksForElement?.(op.id, true);
           break;

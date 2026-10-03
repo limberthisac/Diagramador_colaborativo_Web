@@ -16,4 +16,6 @@ export interface UmlClass {
   methods: Method[];
   position: { x: number; y: number };
   size?: { width: number; height: number };
+  /** Tamaño elegido con el controlador manual; el contenido puede ampliarlo. */
+  manualSize?: { width: number; height: number };
 }

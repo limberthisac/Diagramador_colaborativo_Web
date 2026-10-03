@@ -154,6 +154,18 @@ export class EditionService {
     model.portProp('bottom', 'args', { x: width / 2, y: height });
     model.portProp('left',   'args', { x: 0,        y: height / 2 });
     model.portProp('right',  'args', { x: width,    y: height / 2 });
+    model.attr({
+      '.uml-resize-handle': { x: width - 12, y: height - 12 }
+    }, { resizeHandle: true });
+  }
+
+  /** Aplica el tamaño pedido sin permitir que el contenido quede recortado. */
+  setManualSize(model: any, paper: any, width: number, height: number) {
+    model.set('manualSize', {
+      width: Math.max(this.MIN_W, Math.round(width)),
+      height: Math.max(this.NAME_H + this.MIN_ATTRS_H + this.MIN_METHS_H, Math.round(height))
+    });
+    this.autoResizeUmlClass(model, paper);
   }
 
   scheduleAutoResize(model: any, paper: any) {
@@ -177,7 +189,11 @@ export class EditionService {
   autoResizeUmlClass(model: any, paper: any) {
     if (!model?.isElement?.()) return;
 
-    const width  = Math.max(this.MIN_W, (model.get('size')?.width) || this.MIN_W);
+    const manualSize = model.get('manualSize');
+    const width  = Math.max(
+      this.MIN_W,
+      manualSize?.width || model.get('size')?.width || this.MIN_W
+    );
     const nameH  = this.NAME_H;
 
     const attrsHText = this.getTextBBox(model, paper, '.uml-class-attrs-text');
@@ -185,7 +201,8 @@ export class EditionService {
 
     const attrsH = Math.max(this.MIN_ATTRS_H, Math.round((attrsHText || 0) + this.PAD_V));
     const methsH = Math.max(this.MIN_METHS_H, Math.round((methsHText || 0) + this.PAD_V));
-    const totalH = Math.round(nameH + attrsH + methsH);
+    const contentH = Math.round(nameH + attrsH + methsH);
+    const totalH = Math.max(contentH, manualSize?.height || 0);
 
     // Un píxel menos que la franja: el rectángulo arranca en y=1 para no tapar
     // la mitad interior del trazo de `.uml-outer` (ver createUmlNamespace).

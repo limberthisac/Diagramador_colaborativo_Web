@@ -7,6 +7,7 @@ export interface UmlClassDTO {
   methods: { name: string; parameters?: string; returnType?: string }[];
   position: { x: number; y: number };
   size: { width: number; height: number };
+  manualSize?: { width: number; height: number };
 }
 
 export interface UmlRelationshipDTO {
@@ -62,7 +63,8 @@ export class DiagramExportService {
           attributes,
           methods,
           position: cell.position(),  // 👈 posición
-          size: cell.size()           // 👈 tamaño
+          size: cell.size(),          // 👈 tamaño efectivo
+          manualSize: cell.get('manualSize') || undefined
         });
       } else if (cell.isLink?.()) {
         relationships.push({
