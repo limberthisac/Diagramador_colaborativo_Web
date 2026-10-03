@@ -209,6 +209,7 @@ export class DiagramService {
       this.paper.on('element:resize:pointerup', (view: any) => {
         const m = view.model;
         const s = m.size();
+        this.layoutRecursiveLinksForElement(m.id);
         this.collab.broadcast({ t: 'resize', id: m.id, w: s.width, h: s.height });
       });
       // Difundir edición de etiquetas en links
@@ -248,7 +249,7 @@ export class DiagramService {
 
       // 2) Respaldo: si el link se añadió sin extremos y luego se conectan
       this.graph.on('change:source change:target', (link: any, _val: any, opt: any = {}) => {
-        if (!link?.isLink || opt?.collab) return;
+        if (!link?.isLink || opt?.collab || opt?.recursiveLayout) return;
 
         const src = link.get('source')?.id;
         const trg = link.get('target')?.id;
@@ -306,7 +307,7 @@ export class DiagramService {
 
       // 👉 Vertices
       this.graph.on('change:source change:target', (link: any, _val: any, opt: any = {}) => {
-        if (!link?.isLink || opt?.collab) return;
+        if (!link?.isLink || opt?.collab || opt?.recursiveLayout) return;
 
         const src = link.get('source')?.id;
         const trg = link.get('target')?.id;
@@ -699,10 +700,29 @@ export class DiagramService {
 
     const bbox = this.graph?.getCell(sourceId)?.getBBox?.();
     if (!bbox) return;
-    const margin = Math.max(50, Math.min(90, bbox.width / 2));
+
+    // Dos anclas distintas sobre el lado derecho permiten que los tramos de
+    // entrada y salida sean horizontales. Los dos vértices comparten X, por lo
+    // que el tramo exterior queda vertical: el rectángulo clásico de EA.
+    const inset = Math.max(22, Math.min(32, bbox.height * 0.25));
+    const upperY = bbox.y + inset;
+    const lowerY = bbox.y + bbox.height - inset;
+    const centerY = bbox.y + bbox.height / 2;
+    const margin = Math.max(70, Math.min(120, bbox.width * 0.55));
+    const outerX = bbox.x + bbox.width + margin;
+    link.set({
+      source: {
+        id: sourceId,
+        anchor: { name: 'right', args: { dy: upperY - centerY } }
+      },
+      target: {
+        id: targetId,
+        anchor: { name: 'right', args: { dy: lowerY - centerY } }
+      }
+    }, { ...options, recursiveLayout: true });
     link.set('vertices', [
-      { x: bbox.x + bbox.width + margin, y: bbox.y - margin },
-      { x: bbox.x - margin, y: bbox.y - margin }
+      { x: outerX, y: upperY },
+      { x: outerX, y: lowerY }
     ], options);
   }
 
@@ -1115,7 +1135,9 @@ export class DiagramService {
         link.set('vertices', rel.vertices);
       }
 
-      if (srcId === trgId) this.ensureRecursiveLinkLayout(link);
+      // Normaliza también los bucles guardados con el trazado trapezoidal de
+      // la primera versión de la funcionalidad.
+      if (srcId === trgId) this.ensureRecursiveLinkLayout(link, true);
 
       this.graph.addCell(link);
     };

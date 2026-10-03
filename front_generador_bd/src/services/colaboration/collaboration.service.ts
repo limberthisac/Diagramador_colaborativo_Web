@@ -118,6 +118,7 @@ export class CollaborationService {
           const m = graph.getCell(op.id);
           if (!m) break;
           m.resize(op.w, op.h);
+          this.api?.layoutRecursiveLinksForElement?.(op.id, true);
           break;
         }
         case 'add_link': {
