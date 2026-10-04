@@ -23,6 +23,9 @@ export class DiagramService {
   private pan = { x: 0, y: 0 };
   private isPanning = false;
   private lastPos = { x: 0, y: 0 };
+  // Deja las multiplicidades por encima de los controles de reconexión que
+  // JointJS muestra al posar el mouse sobre los extremos del enlace.
+  private readonly multiplicityOffset = -18;
   public clipboard: any = null;
 
 
@@ -566,12 +569,12 @@ export class DiagramService {
       },
       labels: [
         {
-          position: { distance: 20, offset: -10 },
+          position: { distance: 20, offset: this.multiplicityOffset },
           attrs: { text: { text: '0..1', fill: '#333', fontSize: 12 } },
           markup: [{ tagName: 'text', selector: 'text' }]
         },
         {
-          position: { distance: -20, offset: -10 },
+          position: { distance: -20, offset: this.multiplicityOffset },
           attrs: { text: { text: '1..*', fill: '#333', fontSize: 12 } },
           markup: [{ tagName: 'text', selector: 'text' }]
         }
@@ -685,12 +688,12 @@ export class DiagramService {
     if (!DiagramService.isLinkAnchored(type) && type !== 'generalization') {
       const labels: any[] = [
         {
-          position: { distance: 20, offset: -10 },
+          position: { distance: 20, offset: this.multiplicityOffset },
           attrs: { text: { text: '0..1', fill: '#333', fontSize: 12 } },
           markup: [{ tagName: 'text', selector: 'text' }]
         },
         {
-          position: { distance: -20, offset: -10 },
+          position: { distance: -20, offset: this.multiplicityOffset },
           attrs: { text: { text: '1..*', fill: '#333', fontSize: 12 } },
           markup: [{ tagName: 'text', selector: 'text' }]
         }
@@ -1093,11 +1096,11 @@ export class DiagramService {
       },
       labels: [
         {
-          position: { distance: 20, offset: -10 },
+          position: { distance: 20, offset: this.multiplicityOffset },
           attrs: { text: { text: '0..1', fill: '#333' } },
         },
         {
-          position: { distance: -20, offset: -10 },
+          position: { distance: -20, offset: this.multiplicityOffset },
           attrs: { text: { text: '1..*', fill: '#333' } },
         },
       ],
@@ -1209,7 +1212,7 @@ export class DiagramService {
               ? { distance: 0.2, offset: 12 }
               : recursive && i === 3
                 ? { distance: 0.8, offset: 12 }
-                : { distance: i === 0 ? 20 : -20, offset: -10 },
+                : { distance: i === 0 ? 20 : -20, offset: this.multiplicityOffset },
             attrs: { text: { text: txt, fill: '#333', fontSize: 12 } },
             markup: [{ tagName: 'text', selector: 'text' }]
           }))
