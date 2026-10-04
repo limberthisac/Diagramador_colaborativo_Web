@@ -210,6 +210,15 @@ body,
   stroke: var(--link);
 }
 
+/* Controles verdes para reconectar los extremos al posar el mouse. Se reducen
+   ligeramente para que no invadan las multiplicidades cercanas, conservando
+   suficiente superficie para arrastrarlos. */
+.joint-link .marker-arrowhead {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(.72);
+}
+
 /* Punta hueca (herencia, agregación): se rellena con el color del lienzo
    para tapar la línea que pasa por debajo, no con transparencia. */
 .joint-link [data-hollow="true"] {
